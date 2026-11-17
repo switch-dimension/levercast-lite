@@ -1,0 +1,124 @@
+{
+  "version": 2,
+  "skills": {
+    "mt-brand": {
+      "source": "switch-dimension/molten-loop",
+      "commit": "3e6130790575eef26c64d8ae375049132904a520",
+      "sourceType": "github",
+      "skillPath": "skills/mt-brand/SKILL.md",
+      "computedHash": "6338f0747abdc2b01676345b941c43edbfed230ba2ff0fcda443613d09451660"
+    },
+    "mt-build": {
+      "source": "switch-dimension/molten-loop",
+      "commit": "3e6130790575eef26c64d8ae375049132904a520",
+      "sourceType": "github",
+      "skillPath": "skills/mt-build/SKILL.md",
+      "computedHash": "262e0c93a2fe23b25e96538d96d6952f1c9921eb0543e0fbfd4ae1377feb4e90"
+    },
+    "mt-design": {
+      "source": "switch-dimension/molten-loop",
+      "commit": "3e6130790575eef26c64d8ae375049132904a520",
+      "sourceType": "github",
+      "skillPath": "skills/mt-design/SKILL.md",
+      "computedHash": "f605a200d32c86d50ecc2f047a5da57acd339d685f41bd8e2b97011cc90617c9"
+    },
+    "mt-discovery": {
+      "source": "switch-dimension/molten-loop",
+      "commit": "3e6130790575eef26c64d8ae375049132904a520",
+      "sourceType": "github",
+      "skillPath": "skills/mt-discovery/SKILL.md",
+      "computedHash": "20086ec82aa38a90fc10e9e79208e3b729d1f8148260510f69ecb31e6c586ea8"
+    },
+    "mt-guide": {
+      "source": "switch-dimension/molten-loop",
+      "commit": "3e6130790575eef26c64d8ae375049132904a520",
+      "sourceType": "github",
+      "skillPath": "skills/mt-guide/SKILL.md",
+      "computedHash": "b2369fc2ff6f5fa8394060e603a44dabf043cf4371a33b6c11bfa0b46a91e7ac"
+    },
+    "mt-landing": {
+      "source": "switch-dimension/molten-loop",
+      "commit": "3e6130790575eef26c64d8ae375049132904a520",
+      "sourceType": "github",
+      "skillPath": "skills/mt-landing/SKILL.md",
+      "computedHash": "5c0661e50ce3726c93bf9fca82e68513c5dd14fa7d52da866d02fd3b0720a153"
+    },
+    "mt-mockup": {
+      "source": "switch-dimension/molten-loop",
+      "commit": "3e6130790575eef26c64d8ae375049132904a520",
+      "sourceType": "github",
+      "skillPath": "skills/mt-mockup/SKILL.md",
+      "computedHash": "f43b6ab0fad711b42fbfea906f6063a6ae5487eb6304960c467d6b7a600b3e6e"
+    },
+    "mt-plan": {
+      "source": "switch-dimension/molten-loop",
+      "commit": "3e6130790575eef26c64d8ae375049132904a520",
+      "sourceType": "github",
+      "skillPath": "skills/mt-plan/SKILL.md",
+      "computedHash": "31546b5da83cc3ebff77871873522086e54cde71dca3f2c44f25d574548b1da0"
+    },
+    "mt-prototype": {
+      "source": "switch-dimension/molten-loop",
+      "commit": "3e6130790575eef26c64d8ae375049132904a520",
+      "sourceType": "github",
+      "skillPath": "skills/mt-prototype/SKILL.md",
+      "computedHash": "040db7365bc5840cdf7f2be64968618817979bdbcbabec0fcbc513af42feefbd"
+    },
+    "mt-review": {
+      "source": "switch-dimension/molten-loop",
+      "commit": "3e6130790575eef26c64d8ae375049132904a520",
+      "sourceType": "github",
+      "skillPath": "skills/mt-review/SKILL.md",
+      "computedHash": "018192db7c07473468bdf0ee7652cd5984df0c906ce76ca5dc7a486264a8affc"
+    },
+    "mt-search": {
+      "source": "switch-dimension/molten-loop",
+      "commit": "3e6130790575eef26c64d8ae375049132904a520",
+      "sourceType": "github",
+      "skillPath": "skills/mt-search/SKILL.md",
+      "computedHash": "f66cdc35e660b316bc3f129728fda6b8a9ab2a2400d707f01d8840db4bb71773"
+    },
+    "mt-ship": {
+      "source": "switch-dimension/molten-loop",
+      "commit": "3e6130790575eef26c64d8ae375049132904a520",
+      "sourceType": "github",
+      "skillPath": "skills/mt-ship/SKILL.md",
+      "computedHash": "c1f8287c0a2788f839d6b7711954244b9d3d3eaabb216d7012e6abc34ae39007"
+    },
+    "mt-skill-manage": {
+      "source": "switch-dimension/molten-loop",
+      "commit": "3e6130790575eef26c64d8ae375049132904a520",
+      "sourceType": "github",
+      "skillPath": "skills/mt-skill-manage/SKILL.md",
+      "computedHash": "3c225379dfdb633d4a8f136067dd4f5e0e4722fb4ff183641fd9bb0794b1d573"
+    },
+    "mt-spec": {
+      "source": "switch-dimension/molten-loop",
+      "commit": "3e6130790575eef26c64d8ae375049132904a520",
+      "sourceType": "github",
+      "skillPath": "skills/mt-spec/SKILL.md",
+      "computedHash": "13475fac6004ae221ca53695928923e4890974490e45163d7a74b03496512fc0"
+    },
+    "mt-validate": {
+      "source": "switch-dimension/molten-loop",
+      "commit": "3e6130790575eef26c64d8ae375049132904a520",
+      "sourceType": "github",
+      "skillPath": "skills/mt-validate/SKILL.md",
+      "computedHash": "ecba69951cadb1734785cda0161b3d1ffd50a832ea2d1a959961a1eb12087f08"
+    },
+    "mt-verify": {
+      "source": "switch-dimension/molten-loop",
+      "commit": "3e6130790575eef26c64d8ae375049132904a520",
+      "sourceType": "github",
+      "skillPath": "skills/mt-verify/SKILL.md",
+      "computedHash": "5946960822f9543f11af9b52eda64fb9d289b53fba62142e515e1cc129023413"
+    },
+    "vercel-react-best-practices": {
+      "source": "vercel-labs/agent-skills",
+      "commit": "1a2c79d4e6c4a2283dc2c614b6538cbe1ed5ca62",
+      "sourceType": "github",
+      "skillPath": "skills/react-best-practices/SKILL.md",
+      "computedHash": "7991ed4fbecdac23f47c1a40c243e00a212a9e7f3604db93959b3ae11dffe299"
+    }
+  }
+}
