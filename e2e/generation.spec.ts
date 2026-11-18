@@ -56,6 +56,24 @@ test("Generate on Home opens the editor and streams all three drafts (AC-12)", a
   expect(after).toHaveLength(3);
 });
 
+test("X is split into tweets with their own counts; over-limit counts are highlighted (AC-14, AC-15)", async ({
+  page,
+}) => {
+  await startFromHome(page, "Too long [mock:long]");
+  const x = panel(page, "X");
+  await expect(x.getByText("Draft ready")).toBeVisible();
+  await expect(x.getByRole("listitem")).toHaveCount(2);
+  const tweetCounts = x.getByTestId("char-count");
+  await expect(tweetCounts.first()).toHaveAttribute("data-over", "true");
+  await expect(tweetCounts.first()).toContainText("/ 280");
+  await expect(tweetCounts.nth(1)).not.toHaveAttribute("data-over");
+
+  await expect(panel(page, "LinkedIn").getByTestId("char-count")).toContainText("/ 3,000");
+  await expect(panel(page, "LinkedIn").getByTestId("char-count")).toHaveAttribute("data-over", "true");
+  await expect(panel(page, "Bluesky").getByTestId("char-count")).toContainText("/ 300");
+  await expect(panel(page, "Bluesky").getByTestId("char-count")).toHaveAttribute("data-over", "true");
+});
+
 test("a failed platform shows Try again while the others finish (AC-16)", async ({ page }) => {
   const postId = await startFromHome(page, "Failing Bluesky [mock:fail:bluesky]");
 

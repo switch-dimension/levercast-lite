@@ -12,6 +12,7 @@ import { buildPrompt } from "@/lib/ai/prompts";
 import { getModel, modelId as currentModelId, REASONING } from "@/lib/ai/model";
 import { encodeResult } from "@/lib/domain/draft-stream";
 import { rateLimit, rateLimitMessage } from "@/lib/domain/rate-limit";
+import { parseThread } from "@/lib/domain/thread";
 import { saveGeneratedDraft } from "@/lib/drafts";
 import { generationStartsSince, recordEvent } from "@/lib/events";
 
@@ -28,8 +29,12 @@ type Args = {
   modelId?: string;
 };
 
-/** Splits generated text into stored content. X threads are parsed in 3.3. */
-function toContent(text: string): string[] | null {
+/** Splits generated text into stored content: one element per X tweet. */
+function toContent(platform: Platform, text: string): string[] | null {
+  if (platform === "x") {
+    const tweets = parseThread(text);
+    return tweets.length ? tweets : null;
+  }
   const trimmed = text.trim();
   return trimmed ? [trimmed] : null;
 }
@@ -83,7 +88,7 @@ export async function generateDraft({ userId, post, platform, signal, model, mod
           }
         }
         if (abort.signal.aborted) throw new Error("Generation was stopped before it finished");
-        const content = toContent(text);
+        const content = toContent(platform, text);
         if (!content) throw new Error("The model returned an empty draft");
         await saveGeneratedDraft({ userId, postId: post.id, platform, content, model: usedModel });
         controller.enqueue(encoder.encode(encodeResult({ ok: true })));

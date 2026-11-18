@@ -1,6 +1,9 @@
 "use client";
 
+import { CharCount } from "@/components/editor/char-count";
+import { XThreadPanel } from "@/components/editor/x-thread-panel";
 import type { PanelRun } from "@/hooks/use-generation";
+import { isOverLimit } from "@/lib/domain/limits";
 import { DRAFT_STATE_LABEL, type DraftState, type EditorDraft } from "@/lib/domain/editor-draft";
 import { PLATFORM_FORMATS, type Platform } from "@/lib/platforms";
 
@@ -78,17 +81,27 @@ export function DraftPanel({ platform, state, draft, run, onRetry }: Props) {
 function DraftText({ platform, draft }: { platform: Platform; draft: EditorDraft }) {
   if (platform === "x") {
     return (
-      <ol className="grid">
-        {draft.content.map((tweet, i) => (
-          <li
-            key={i}
-            className="whitespace-pre-wrap border-b border-dashed border-border py-2.5 font-serif text-[18px] leading-[1.65] last:border-b-0"
-          >
-            {tweet}
-          </li>
-        ))}
-      </ol>
+      <>
+        <XThreadPanel tweets={draft.content} />
+        <div className="mt-3 flex items-center justify-end">
+          <span className="text-caption text-neutral">{draft.content.length} tweets</span>
+        </div>
+      </>
     );
   }
-  return <p className="whitespace-pre-wrap font-serif text-[18px] leading-[1.65]">{draft.content.join("\n\n")}</p>;
+  const text = draft.content.join("\n\n");
+  return (
+    <>
+      <p
+        className={`whitespace-pre-wrap rounded-sm px-2.5 py-2 font-serif text-[18px] leading-[1.65] -mx-2.5 ${
+          isOverLimit(platform, text) ? "bg-[#fbeeed]" : ""
+        }`}
+      >
+        {text}
+      </p>
+      <div className="mt-3 flex items-center justify-end">
+        <CharCount platform={platform} text={text} />
+      </div>
+    </>
+  );
 }

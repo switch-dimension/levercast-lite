@@ -93,6 +93,18 @@ describe("generateDraft", () => {
     }
   });
 
+  it("saves an X thread as one element per tweet (AC-14)", async () => {
+    const userId = newUser();
+    const post = await createPost(userId, "Idea");
+    await (
+      await generateDraft({ userId, post, platform: "x", model: streamingModel(["1/ One\n\n", "2/ Two\n\n3/ Three"]) })
+    ).text();
+
+    const draft = await draftFor(post.id, "x");
+    expect(draft.content).toEqual(["1/ One", "2/ Two", "3/ Three"]);
+    expect(draft.generatedContent).toEqual(draft.content);
+  });
+
   it("regenerating replaces the draft and records another started + completed", async () => {
     const userId = newUser();
     const post = await createPost(userId, "Idea");
