@@ -78,9 +78,20 @@ export function useAutosave<T>(save: (value: T) => Promise<void>, delay = 1000) 
 
   useEffect(
     () => () => {
-      // Leaving the page: save what's waiting (the request outlives us).
+      // Leaving the page, or being hidden by <Activity> (which keeps state):
+      // save what's waiting now. The request outlives an unmount, and a
+      // hidden-then-shown box must not stay on "Saving…".
       if (timer.current) clearTimeout(timer.current);
-      if (waiting.current) void queue().save(waiting.current.value);
+      timer.current = null;
+      const next = waiting.current;
+      waiting.current = null;
+      if (!next) return;
+      failed.current = false;
+      void queue()
+        .save(next.value)
+        .then(() => {
+          if (!waiting.current) setStatus(failed.current ? "error" : "saved");
+        });
     },
     [queue],
   );
