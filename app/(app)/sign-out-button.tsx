@@ -19,7 +19,7 @@ export function SignOutButton() {
           router.refresh();
         })
       }
-      className="inline-flex min-h-11 items-center rounded-sm border border-border px-3.5 text-label-md transition-colors duration-200 hover:bg-secondary disabled:cursor-not-allowed disabled:text-disabled"
+      className="btn btn-ghost"
     >
       {pending ? "Signing out…" : "Sign out"}
     </button>

@@ -26,8 +26,11 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
 async function AccountMenu() {
   const user = await requireUser();
   return (
-    <div className="flex items-center gap-4">
-      <span className="hidden text-caption text-neutral sm:inline">{user.email}</span>
+    <div className="flex items-center gap-2 sm:gap-4">
+      <span className="hidden text-caption text-neutral md:inline">{user.email}</span>
+      <Link href="/posts" className="btn btn-ghost">
+        My posts
+      </Link>
       <SignOutButton />
     </div>
   );
