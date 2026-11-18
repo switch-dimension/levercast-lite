@@ -4,7 +4,7 @@ slug: post-drafting-mvp
 created: 2026-11-18
 status: approved
 discovery: molten-docs/discovery/post-drafting-mvp.md
-prototype: null
+prototype: molten-docs/prototype/post-drafting-mvp.md
 mockup: null
 molten_next_skill: mt-plan
 ---
@@ -50,7 +50,7 @@ Confirmed with the user on 2026-11-18:
 - **US-1.** As an invited consultant, I can sign in so that my posts are private to me.
 - **US-2.** As someone who isn't invited, I'm told clearly that the app is invite-only, so I'm not confused.
 - **US-3.** As a user, I see all my posts in one list, so I can pick up where I left off.
-- **US-4.** As a user, I can type a rough idea and generate drafts for LinkedIn, X, and Bluesky in one click.
+- **US-4.** As a user, I can start typing a rough idea as soon as I open the app, and generate drafts for LinkedIn, X, and Bluesky in one click.
 - **US-5.** As a user, I can edit any draft, regenerate just one platform, and copy a draft to my clipboard to post it myself.
 - **US-6.** As a user, I know when my drafts were generated from an older version of my idea.
 - **US-7.** As a user, I can delete a post I no longer want.
@@ -72,13 +72,24 @@ Confirmed with the user on 2026-11-18:
     - *Not generated*: the post has no drafts yet
     - *Draft*: drafts exist but none has been copied
     - *Copied*: at least one draft has been copied
-- **FR-6.** The list has an empty state with a gentle nudge (e.g. "What's been on your mind this week?") and a **New post** action.
-- **FR-7.** Users can create a post by entering a rough idea of 1–5,000 characters. Leading and trailing whitespace is trimmed, and an idea that is empty after trimming can't be generated.
+- **FR-6.** The app opens on **Home**:
+  - a writing box headed by a gentle nudge ("What's been on your mind this week?"), which serves as the **New post** action
+  - below it, up to 4 of the user's most recently updated posts, shown as cards with the same preview, time, and status as FR-5
+  - a link to **My posts**
+
+  A user with no posts sees only the writing box. **My posts** has its own empty state that links back to Home.
+- **FR-7.** Users create a post by typing a rough idea of 1–5,000 characters. Leading and trailing whitespace is trimmed, and an idea that is empty after trimming can't be generated.
+  - The idea saves automatically within ~1 second of the user stopping typing.
+  - The post is created the first time a non-empty idea is saved, whether by autosave or by Generate.
+  - So an idea the user typed but never generated is kept, and shows as *Not generated* in the list.
 - **FR-8.** Users can reopen a post to view or edit the idea and drafts.
 - **FR-9.** Users can delete a post after a confirmation step. Deletion is a soft delete: the post disappears from the list and from direct URLs, but its events are kept.
 
 **Generation**
-- **FR-10.** **Generate** saves the idea and then generates all three drafts in parallel, one call per platform. Each draft streams into its own panel as it is written.
+- **FR-10.** **Generate drafts** saves the idea and then generates all three drafts in parallel, one call per platform. Each draft streams into its own panel as it is written. Generating from Home opens the post editor.
+  - Once a post has drafts, the action is labelled **Regenerate all**.
+  - Unedited drafts regenerate immediately.
+  - Each edited draft first asks for confirmation in its own panel (FR-15) and is regenerated only if the user confirms.
 - **FR-11.** Each platform has a fixed prompt that enforces the brand rules:
   - no engagement-bait or generic hook openers
   - no "As an expert…" phrasing
@@ -91,9 +102,9 @@ Confirmed with the user on 2026-11-18:
   - **Bluesky:** one post, ≤300 characters.
 - **FR-13.** Each draft panel shows a live character count against its limit. For X, the count is shown per tweet. Going over a limit is highlighted but doesn't block editing or copying.
 - **FR-14.** One platform failing doesn't affect the others. A failed panel shows a plain error with a **Try again** action for that platform only.
-- **FR-15.** Each panel has **Regenerate**, which regenerates only that platform. If the user has edited that draft since it was generated, they must confirm first, because their edit will be replaced.
+- **FR-15.** Each panel has **Regenerate**, which regenerates only that platform. If the user has edited that draft since it was generated, they must confirm first, because their edit will be replaced. The confirmation appears inline in the panel, not as a modal, with **Keep my edit** and **Replace it**.
 - **FR-16.** While a platform is generating, its Generate and Regenerate actions are disabled, so the same platform can't run twice at once.
-- **FR-17.** Each user can run at most 50 platform generations per rolling 24 hours (one Generate click counts as 3). Over the cap, generation is refused with a plain message saying when they can try again.
+- **FR-17.** Each user can run at most 50 platform generations per rolling 24 hours (one Generate click counts as 3). Over the cap, generation is refused with a plain message saying when they can try again. The message counts in drafts, not platform generations, e.g. "You've used today's 50 drafts. You can generate again at 3:10 PM."
 
 **Drafts**
 - **FR-18.** Users can edit any draft inline. Edits save automatically within ~1 second of the user stopping typing, and also when the user copies.
@@ -122,13 +133,15 @@ Confirmed with the user on 2026-11-18:
 **Posts**
 - **AC-6** Given user A and user B each have posts, when A views **My posts** or requests B's post by URL or API, then A sees only their own posts, and B's post returns 404. *(FR-3, FR-5)*
 - **AC-7** Given a user has three posts, when they view **My posts**, then the posts appear newest-updated first, each with an idea preview, last-updated time, and the correct status (*Not generated*, *Draft*, or *Copied*). *(FR-5)*
-- **AC-8** Given a user has no posts, when they view **My posts**, then they see the empty-state nudge and a **New post** action. *(FR-6)*
+- **AC-8** Given a user has posts, when they open the app, then they land on Home with the writing box (headed "What's been on your mind this week?") ready to type in, and up to 4 recent posts below it. Given a user has no posts, then Home shows only the writing box, and **My posts** shows an empty state linking back to Home. *(FR-6)*
+- **AC-8a** Given a user types an idea on Home and leaves without clicking Generate, when they open **My posts**, then the idea is there as a post with status *Not generated*, and exactly one *post created* event exists for it. *(FR-7, FR-21)*
 - **AC-9** Given the idea field is empty or whitespace only, then Generate is disabled. Given the idea is over 5,000 characters, then the user sees a length message and Generate is disabled. *(FR-7)*
 - **AC-10** Given a user deletes a post and confirms, then it disappears from the list, its URL returns 404, and its events still exist in the database. Cancelling the confirmation changes nothing. *(FR-9)*
 - **AC-11** Given an existing post, when the user reopens it, then the latest saved idea and drafts are shown. *(FR-8, FR-18)*
 
 **Generation**
-- **AC-12** Given a valid idea, when the user clicks Generate, then the idea is saved and three panels (LinkedIn, X, Bluesky) start streaming text independently. Each panel shows its final draft when finished. *(FR-10)*
+- **AC-12** Given a valid idea, when the user clicks Generate, then the idea is saved and three panels (LinkedIn, X, Bluesky) start streaming text independently. Each panel shows its final draft when finished. Generating from Home opens the post editor. *(FR-10)*
+- **AC-12a** Given a post with drafts where only the X draft has been edited, when the user clicks **Regenerate all**, then LinkedIn and Bluesky regenerate immediately, and the X panel shows the inline confirmation. **Keep my edit** leaves X unchanged with no model call, and **Replace it** regenerates X. *(FR-10, FR-15)*
 - **AC-13** Given the sample ideas in the prompt-quality check (see Testing approach), when the drafts are generated, then none opens with a generic hook pattern ("Here's the thing", "Let's dive in", "Unpopular opinion:", a question-bait opener), none uses emoji bullets or more than 3 hashtags, and each keeps at least one distinctive phrase or opinion from the idea. *(FR-11)*
 - **AC-14** Given the generated drafts, then the X draft is 2–6 numbered tweets, and the app parses them into separate tweets each with its own character count. The LinkedIn and Bluesky panels show counts against 3,000 and 300. *(FR-12, FR-13)*
 - **AC-15** Given a draft goes over its platform limit, then its count is highlighted, and the user can still edit and copy it. *(FR-13)*
@@ -194,13 +207,32 @@ Whether each of these is a Server Action or a Route Handler is a decision for mt
 ## UX notes
 
 - **Design system:** `molten-docs/design/design.md` (Ink & Paper). Newsreader serif for the idea and draft text; Geist sans for controls, labels, counts, and statuses.
+- **Layout** (chosen in the prototype; see `molten-docs/prototype/post-drafting-mvp/hybrid.html`): start by writing, then a single-column editor. The same layout is used on desktop and mobile.
 - **Screens:**
   - **Sign in:** Google and email.
   - **Invite-only notice.**
-  - **My posts:** the list.
-  - **Post editor:** the idea at the top, with three draft panels shown as tabs or side by side on wide screens and stacked on narrow screens.
+  - **Home** (the default route after sign-in):
+    - the nudge as a serif heading
+    - a large idea box with **Generate drafts**
+    - "Recent" cards below (up to 4) and "All posts →"
+  - **My posts:** the full list (FR-5), reached from the top bar and from Home.
+  - **Post editor:** one column, max ~760px wide.
+    - The idea is at the top, with its count and **Generate drafts** / **Regenerate all**.
+    - Below it are LinkedIn, X, and Bluesky as stacked sections. Each has a serif heading, its format target, and its state.
+    - A sticky strip under the top bar has **← My posts** and one link per platform showing its state. Clicking a link scrolls to that section.
+    - **Delete post** is at the foot of the page.
+- **Draft states**, shown as a dot and a label in the strip and in each section heading:
+  - *Not generated*
+  - *Writing…*
+  - *Draft ready*
+  - *Idea changed*
+  - *Didn't finish*
+- **Streaming motion:** text arrives a few words at a time, with a quiet "Writing your LinkedIn draft" label and a slowly pulsing dot. There is no caret and no typewriter effect, in line with `design.md`'s motion rules. Respect `prefers-reduced-motion`.
+- **Confirmations:**
+  - Regenerating an edited draft is confirmed inline in its panel.
+  - Deleting a post uses a modal dialog.
 - **Microcopy follows the brand:**
-  - **Actions:** "New post", "Generate drafts", "Regenerate", "Copy", "Try again".
+  - **Actions:** "Generate drafts", "Regenerate all", "Regenerate", "Copy", "Copy thread", "Try again", "Keep my edit", "Replace it", "Delete post".
   - **Statuses:** calm ("Draft ready", "Copied").
   - **Errors:** say what happened, then what to do next, with no jokes.
   - **Words to avoid:** "AI-generated" or "content" anywhere in the UI.
@@ -220,6 +252,8 @@ Whether each of these is a Server Action or a Route Handler is a decision for mt
 | Rate limit reached | Plain message with the time it resets (AC-20) |
 | Clipboard API blocked | Message: "Couldn't copy. Select the text and copy it manually." No *draft copied* event is recorded |
 | Idea edited while drafts are generating | Drafts finish against the idea at the time Generate was clicked, then show the stale note |
+| Idea typed on Home, never generated | Saved as a post with status *Not generated* (AC-8a) |
+| **Regenerate all** with some drafts edited | Unedited drafts regenerate; each edited draft asks inline first (AC-12a) |
 | Deleted post opened by URL | 404 |
 | Very long idea (5,000 chars) | Accepted; Generate works |
 
@@ -300,6 +334,12 @@ Whether each of these is a Server Action or a Route Handler is a decision for mt
 - Email sign-in is passwordless (magic link or one-time code).
 - X has per-tweet Copy, logged with the tweet number.
 - The rate cap is 50 platform generations per 24 hours.
+
+**Resolved by the prototype, 2026-11-18** (see `molten-docs/prototype/post-drafting-mvp.md`):
+- Layout: a writing-first Home, then a single-column editor with a sticky status strip. The Desk (sidebar) and Spread (three columns) layouts were not chosen.
+- Once drafts exist, Generate becomes **Regenerate all**. It never replaces an edited draft without asking.
+- A post is created on the first save of a non-empty idea.
+- The rate-limit message counts in "drafts".
 
 **Still open:**
 - **OQ-1.** Which Neon Auth email sender to use: the built-in sender, or a configured provider. Also, how the Playwright test user gets past passwordless sign-in (e.g. a test-only session helper, or reading the code from a test inbox). Decide during mt-plan.
