@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Levercast — Your thoughts, posted. In your voice, not AI's.</title>
+    <meta
+      name="description"
+      content="For solo B2B consultants who have the ideas but never post them. Talk through a rough idea; Levercast turns it into a LinkedIn or X post that sounds like you. Join the founding waitlist."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!-- ============ HERO ============ -->
+    <div class="section--ink">
+      <header class="site-header">
+        <div class="wrap">
+          <span class="wordmark" aria-label="Levercast">Levercast</span>
+        </div>
+      </header>
+
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="wrap hero__grid">
+          <div class="hero__copy">
+            <p class="eyebrow muted">For solo B2B consultants on LinkedIn and X</p>
+            <h1 id="hero-title" class="display hero__title">You have the ideas. You just never post them.</h1>
+            <p class="body-lg muted hero__sub">
+              Talk through a rough idea for two minutes. Levercast turns it into a post that sounds like
+              you&nbsp;— not like AI. You approve every word before anything goes out.
+            </p>
+
+            <!-- TODO: point action at your form backend (e.g. Formspree, ConvertKit, or a Neon-backed API route). -->
+            <form class="signup" action="#" method="post">
+              <div class="signup__row">
+                <label for="email-hero" class="visually-hidden">Email address</label>
+                <input
+                  id="email-hero"
+                  class="signup__input"
+                  type="email"
+                  name="email"
+                  autocomplete="email"
+                  placeholder="you@yourconsultancy.com"
+                  required
+                />
+                <button class="btn btn--inverse" type="submit">Save my founding spot</button>
+              </div>
+              <p class="caption signup__note">Free to join. No card. Founding price $37/month when we launch.</p>
+            </form>
+          </div>
+
+          <!-- Product vignette: decorative UI showing voice note -> draft. Not interactive. -->
+          <div class="vignette" role="img" aria-label="A two-minute voice note becoming a LinkedIn draft that waits for your approval">
+            <div class="float float--voice" aria-hidden="true">
+              <div class="voice">
+                <span class="voice__rec"></span>
+                <div>
+                  <div class="label">Voice note</div>
+                  <div class="caption">Tuesday, between calls · 2:14</div>
+                </div>
+              </div>
+              <div class="wave">
+                <span style="height: 10px"></span><span style="height: 22px"></span><span style="height: 14px"></span
+                ><span style="height: 28px"></span><span style="height: 18px"></span><span style="height: 30px"></span
+                ><span style="height: 12px"></span><span style="height: 24px"></span><span style="height: 16px"></span
+                ><span style="height: 26px"></span><span style="height: 10px"></span><span style="height: 20px"></span
+                ><span style="height: 14px"></span><span style="height: 28px"></span><span style="height: 18px"></span
+                ><span style="height: 12px"></span><span style="height: 22px"></span><span style="height: 8px"></span>
+              </div>
+            </div>
+
+            <p class="vignette__arrow" aria-hidden="true">↓ your words, your rhythm, no generic hook</p>
+
+            <div class="float float--draft" aria-hidden="true">
+              <div class="draft__meta">
+                <span class="tag">Needs your review</span>
+                <span class="caption">LinkedIn · Draft</span>
+              </div>
+              <p class="draft__text">
+                Most clients don't hire me for strategy. They hire me to say the uncomfortable thing in week one&nbsp;—
+                the thing everyone in the room already knows and nobody wants to say first.
+              </p>
+              <div class="draft__actions">
+                <span class="fake-btn fake-btn--solid">Approve</span>
+                <span class="fake-btn">Edit</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <main>
+      <!-- ============ PROOF: FOUNDER BEFORE / AFTER ============ -->
+      <section class="section section--paper" aria-labelledby="proof-title">
+        <div class="wrap rail">
+          <p class="eyebrow">Proof, starting with me</p>
+          <div class="rail__body">
+            <div class="prose">
+              <h2 id="proof-title" class="h-lg">I built this because I was the one not posting.</h2>
+              <p class="body-lg muted">
+                Here's a real voice note and the post it became. Same person, same idea&nbsp;— one version stayed in my
+                head, the other went out.
+              </p>
+            </div>
+
+            <div class="ba">
+              <!-- PLACEHOLDER: replace with your real voice-note transcript (or the half-idea that sat in your notes). -->
+              <figure class="ba__card ba__card--before">
+                <figcaption class="label">Before · what I said</figcaption>
+                <p class="ba__post ba__post--rough">
+                  "So the thing I keep seeing is, clients hire me for a strategy and honestly what they need is someone to
+                  just say the awkward thing early. Like week one. Everyone already knows it, nobody says it…"
+                </p>
+                <p class="caption">[Replace with your real voice note] · 2:14</p>
+              </figure>
+
+              <div class="ba__arrow" aria-hidden="true">→</div>
+
+              <!-- PLACEHOLDER: replace with the real post you published from that voice note. -->
+              <figure class="ba__card ba__card--after">
+                <figcaption class="label">After · what I posted</figcaption>
+                <p class="ba__post">
+                  Most clients don't hire me for strategy. They hire me to say the uncomfortable thing in week one&nbsp;—
+                  the thing everyone in the room already knows and nobody wants to say first.
+                </p>
+                <p class="caption">[Your name], founder · [Replace with your real post] · LinkedIn</p>
+              </figure>
+            </div>
+
+            <!-- OPTIONAL PROOF: add only if real, e.g. "[X] posts in [Y] weeks, after [Z] months of silence." -->
+
+            <div class="proof-cta">
+              <a class="btn btn--primary" href="#join">Save my founding spot</a>
+              <span class="caption">Nothing is ever posted without your approval.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ PROBLEM / STAKES ============ -->
+      <section class="section" aria-labelledby="problem-title">
+        <div class="wrap rail">
+          <p class="eyebrow">Why you're not posting</p>
+          <div class="rail__body">
+            <h2 id="problem-title" class="statement">
+              It isn't a lack of ideas. It's the pressure to write the perfect post&nbsp;— and the fear of sounding like
+              everyone else when you try.
+            </h2>
+            <div class="prose body-lg muted">
+              <p>
+                Your notes app is full of half-thoughts. You open LinkedIn, stare at the box, and close it. When you try
+                ChatGPT, it hands back something with a hook, three emoji bullets and a question at the end. It doesn't
+                sound like you. It sounds like a bot. So you post nothing.
+              </p>
+              <p>
+                Meanwhile, the prospects who'd hire you never see how you think. The feed is full of AI slop. Your thinking
+                isn't&nbsp;— it just needs a way out of your head.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ HOW IT WORKS ============ -->
+      <section class="section section--paper" aria-labelledby="how-title">
+        <div class="wrap" style="display: grid; gap: var(--space-xl)">
+          <div class="prose">
+            <p class="eyebrow">How it works</p>
+            <h2 id="how-title" class="h-lg">Say it. Read it back as you. Post it.</h2>
+          </div>
+          <ol class="steps">
+            <li class="step">
+              <span class="step__num">01</span>
+              <h3 class="h-sm">Say it out loud</h3>
+              <p class="muted">
+                Record a rough voice note between calls or on a walk. It doesn't need to be good. It just needs to be
+                what you actually think.
+              </p>
+            </li>
+            <li class="step">
+              <span class="step__num">02</span>
+              <h3 class="h-sm">Read it back as you</h3>
+              <p class="muted">
+                Levercast drafts a LinkedIn or X post from your own words and phrasing&nbsp;— no generic hooks, no
+                engagement bait, no "As an expert…".
+              </p>
+            </li>
+            <li class="step">
+              <span class="step__num">03</span>
+              <h3 class="h-sm">Approve, then post</h3>
+              <p class="muted">
+                Edit anything, bin anything. Nothing goes out until you say so. You're the author; Levercast stays in the
+                background.
+              </p>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- ============ BENEFITS ============ -->
+      <section class="section" aria-labelledby="benefits-title">
+        <div class="wrap" style="display: grid; gap: var(--space-xl)">
+          <div class="prose">
+            <p class="eyebrow">What changes</p>
+            <h2 id="benefits-title" class="h-lg">Show up every week, sounding like yourself.</h2>
+          </div>
+          <div class="cards">
+            <article class="card">
+              <p class="eyebrow">No blank page</p>
+              <h3 class="h-sm">Start by talking, not typing.</h3>
+              <p class="muted">Two minutes of speaking beats an hour of staring at an empty post box.</p>
+            </article>
+            <article class="card">
+              <p class="eyebrow">Sounds like you</p>
+              <h3 class="h-sm">Your phrasing, kept.</h3>
+              <p class="muted">It edits for clarity, not to make you sound smarter. Your opinions stay yours.</p>
+            </article>
+            <article class="card">
+              <p class="eyebrow">No slop</p>
+              <h3 class="h-sm">Nothing that reads as AI.</h3>
+              <p class="muted">No templated hooks, emoji bullets or "Agree?" endings. Nothing salesy.</p>
+            </article>
+            <article class="card">
+              <p class="eyebrow">Gets better</p>
+              <h3 class="h-sm">Closer to you each time.</h3>
+              <p class="muted">It learns from the drafts you approve and edit, so the next one needs less work.</p>
+            </article>
+          </div>
+
+          <!--
+            TESTIMONIAL SLOT — uncomment only when you have a real quote from a founding member.
+            <figure class="card" style="background: var(--color-secondary); border: 0; max-width: 760px;">
+              <blockquote class="body-lg">"[Real quote — ideally about the draft sounding like them.]"</blockquote>
+              <figcaption><span class="label">[Name]</span><br /><span class="caption">[Role], [Consultancy]</span></figcaption>
+            </figure>
+          -->
+        </div>
+      </section>
+
+      <!-- ============ FOUNDING OFFER ============ -->
+      <section class="section section--paper" aria-labelledby="offer-title">
+        <div class="wrap">
+          <div class="offer">
+            <div style="display: grid; gap: var(--space-md)">
+              <p class="eyebrow">Founding members</p>
+              <h2 id="offer-title" class="h-lg">Get in first. Keep the founding price.</h2>
+              <div class="offer__price">
+                <span class="offer__amount">$37</span>
+                <span class="ui muted">/ month at launch</span>
+              </div>
+              <p class="caption">Joining the waitlist is free. You'll decide whether to subscribe when we open.</p>
+            </div>
+            <ul class="offer__list body-lg">
+              <li>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+                <span>First access before public launch</span>
+              </li>
+              <li>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+                <!-- ASSUMPTION: price lock terms — confirm before publishing. -->
+                <span>$37/month locked in for as long as you stay subscribed</span>
+              </li>
+              <li>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+                <span>A direct line to me while I shape what it becomes</span>
+              </li>
+              <li>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+                <span>LinkedIn and X, with approval before anything posts</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ FAQ / OBJECTIONS ============ -->
+      <section class="section" aria-labelledby="faq-title">
+        <div class="wrap rail">
+          <p class="eyebrow">Fair questions</p>
+          <div class="rail__body">
+            <h2 id="faq-title" class="h-lg">Before you join.</h2>
+            <div class="faq">
+              <details>
+                <summary>Will people be able to tell it's AI?</summary>
+                <p class="faq__answer">
+                  That's the whole point of starting from your voice note. The draft is built from your own words and
+                  phrasing, and Levercast refuses the generic hooks and templates that make AI posts obvious. If a line
+                  doesn't sound like you, you change it before it goes anywhere.
+                </p>
+              </details>
+              <details>
+                <summary>Won't this make me look salesy?</summary>
+                <p class="faq__answer">
+                  Levercast helps you share how you think, not pitch. No engagement bait, no "DM me to learn more"
+                  endings. Sharing a real point of view is the opposite of selling&nbsp;— and it's what makes the right
+                  clients reach out.
+                </p>
+              </details>
+              <details>
+                <summary>I barely have time as it is.</summary>
+                <p class="faq__answer">
+                  If you can talk for two minutes, you can post. Record between calls, review the draft later, approve it
+                  in a tap.
+                </p>
+              </details>
+              <details>
+                <summary>Is $37 a month worth it?</summary>
+                <p class="faq__answer">
+                  Compare it to staying invisible. One client conversation that starts from a post pays for years of
+                  Levercast. And joining the waitlist costs nothing&nbsp;— you'll decide when we launch.
+                </p>
+              </details>
+              <details>
+                <summary>Does it post automatically?</summary>
+                <p class="faq__answer">
+                  Never. Every draft waits for your approval. You can edit it, post it, or throw it away.
+                </p>
+              </details>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ FINAL CTA ============ -->
+      <section class="section section--ink" id="join" aria-labelledby="final-title">
+        <div class="wrap final">
+          <p class="eyebrow muted">Founding waitlist</p>
+          <h2 id="final-title" class="h-lg final__title">Post what you actually think&nbsp;— in your own voice.</h2>
+          <p class="body-lg muted" style="max-width: 34em">
+            Join the founding waitlist. You'll be first in when Levercast opens, at the founding price.
+          </p>
+          <!-- TODO: same form backend as the hero form. -->
+          <form class="signup" action="#" method="post" style="width: 100%">
+            <div class="signup__row">
+              <label for="email-final" class="visually-hidden">Email address</label>
+              <input
+                id="email-final"
+                class="signup__input"
+                type="email"
+                name="email"
+                autocomplete="email"
+                placeholder="you@yourconsultancy.com"
+                required
+              />
+              <button class="btn btn--inverse" type="submit">Save my founding spot</button>
+            </div>
+            <p class="caption signup__note">Free to join. No card. Unsubscribe any time.</p>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <span class="wordmark" style="font-size: 18px; color: var(--color-on-primary)">Levercast</span>
+        <nav class="footer__links" aria-label="Legal">
+          <!-- TODO: link real privacy and terms pages. -->
+          <a href="#">Privacy</a>
+          <a href="#">Terms</a>
+        </nav>
+        <span class="caption">© 2026 Levercast</span>
+      </div>
+    </footer>
+  </body>
+</html>
