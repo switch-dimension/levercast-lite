@@ -11,6 +11,8 @@ import { config } from "dotenv";
 import { generateText } from "ai";
 import { BANNED_OPENERS, buildPrompt } from "../lib/ai/prompts.ts";
 import { getModel, modelId, REASONING } from "../lib/ai/model.ts";
+import { charCount, isOverLimit } from "../lib/domain/limits.ts";
+import { parseThread } from "../lib/domain/thread.ts";
 import { PLATFORMS, PLATFORM_FORMATS, type Platform } from "../lib/platforms.ts";
 
 config({ path: ".env.local", quiet: true });
@@ -30,9 +32,6 @@ if (ideas.length === 0) {
   process.exit(1);
 }
 
-/** Rough length check. Exact X and Bluesky counting arrives in task 3.3. */
-const length = (s: string) => [...s].length;
-
 function flags(platform: Platform, text: string): string[] {
   const out: string[] = [];
   const opening = text.replace(/^1\/\s*/, "").trimStart();
@@ -46,15 +45,15 @@ function flags(platform: Platform, text: string): string[] {
   if (/\*\*|^#{1,6}\s|^\s*[-*]\s/m.test(text)) out.push("Markdown formatting");
 
   if (platform === "x") {
-    const tweets = text.split(/\n\s*\n/).map((t) => t.trim()).filter(Boolean);
-    const { minTweets, maxTweets, charLimit } = PLATFORM_FORMATS.x;
+    const tweets = parseThread(text);
+    const { minTweets, maxTweets } = PLATFORM_FORMATS.x;
     if (tweets.length < minTweets || tweets.length > maxTweets) out.push(`${tweets.length} tweets`);
     tweets.forEach((t, i) => {
       if (!t.startsWith(`${i + 1}/`)) out.push(`tweet ${i + 1} isn't numbered "${i + 1}/"`);
-      if (length(t) > charLimit) out.push(`tweet ${i + 1} is ${length(t)} characters`);
+      if (isOverLimit("x", t)) out.push(`tweet ${i + 1} counts ${charCount("x", t)}`);
     });
-  } else if (length(text) > PLATFORM_FORMATS[platform].charLimit) {
-    out.push(`${length(text)} characters`);
+  } else if (isOverLimit(platform, text)) {
+    out.push(`${charCount(platform, text)} characters`);
   }
   return out;
 }
@@ -87,7 +86,7 @@ for (const [i, idea] of ideas.entries()) {
     const { text, flags } = drafts[j];
     if (flags.length) flagged++;
     const flagLine = flags.length ? `**Flags:** ${flags.join("; ")}` : "**Flags:** none";
-    return `### ${PLATFORM_FORMATS[p].label} (${length(text)} chars)\n\n${flagLine}\n\n\`\`\`text\n${text}\n\`\`\`\n\n- [ ] I'd post this with light edits`;
+    return `### ${PLATFORM_FORMATS[p].label} (${charCount(p, text)} chars)\n\n${flagLine}\n\n\`\`\`text\n${text}\n\`\`\`\n\n- [ ] I'd post this with light edits`;
   }).join("\n\n");
   sections.push(`## Idea ${i + 1}\n\n> ${idea.replace(/\n/g, "\n> ")}\n\n${body}`);
 }
