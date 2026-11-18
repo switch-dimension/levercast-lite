@@ -1,14 +1,16 @@
 // Generates one platform's draft as a plain text stream (FR-10, FR-14).
 //
-// The response closes cleanly only after the draft is saved, so a client that
-// reads to the end knows it succeeded. Any failure (model error, error part,
-// empty output, timeout, the client leaving) errors the stream, records
-// *generation failed*, and leaves the previous draft untouched.
+// The stream ends with an in-band result (see lib/domain/draft-stream.ts):
+// `ok: true` only after the draft is saved. Any failure (model error, error
+// part, empty output, timeout, the client leaving) ends it with `ok: false`,
+// records *generation failed*, and leaves the previous draft untouched. The
+// connection itself always closes cleanly, so browsers never retry the POST.
 import "server-only";
 import { streamText, type LanguageModel } from "ai";
 import type { Platform, Post } from "@/db/schema";
 import { buildPrompt } from "@/lib/ai/prompts";
-import { getModel, modelId as currentModelId } from "@/lib/ai/model";
+import { getModel, modelId as currentModelId, REASONING } from "@/lib/ai/model";
+import { encodeResult } from "@/lib/domain/draft-stream";
 import { rateLimit, rateLimitMessage } from "@/lib/domain/rate-limit";
 import { saveGeneratedDraft } from "@/lib/drafts";
 import { generationStartsSince, recordEvent } from "@/lib/events";
@@ -49,6 +51,7 @@ export async function generateDraft({ userId, post, platform, signal, model, mod
 
   const result = streamText({
     model: model ?? getModel(),
+    reasoning: REASONING,
     ...buildPrompt(platform, post.idea),
     abortSignal: abort.signal,
     timeout: { totalMs: TIMEOUT_MS },
@@ -83,14 +86,19 @@ export async function generateDraft({ userId, post, platform, signal, model, mod
         const content = toContent(text);
         if (!content) throw new Error("The model returned an empty draft");
         await saveGeneratedDraft({ userId, postId: post.id, platform, content, model: usedModel });
-        controller.close();
+        controller.enqueue(encoder.encode(encodeResult({ ok: true })));
       } catch (error) {
         await fail(abort.signal.aborted ? "Generation was stopped before it finished" : error).catch(() => {});
         try {
-          controller.error(error);
+          controller.enqueue(encoder.encode(encodeResult({ ok: false, error: "This draft didn't finish." })));
         } catch {
-          // Already cancelled by the client.
+          // The client already left.
         }
+      }
+      try {
+        controller.close();
+      } catch {
+        // The client already left.
       }
     },
     cancel(reason) {

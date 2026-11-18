@@ -6,6 +6,13 @@ import { MockLanguageModelV4 } from "ai/test";
 
 export const DEFAULT_MODEL = "anthropic/claude-sonnet-5.5";
 
+/**
+ * Light editing doesn't need deep reasoning. At the provider default, Sonnet
+ * 5.5 thought for ~3-5 s before the first word of LinkedIn and X drafts; at
+ * "low" the first text arrives in ~1 s (NFR: ~3 s p50). Measured 2026-11-18.
+ */
+export const REASONING = "low" as const;
+
 const isMock = () => process.env.AI_MOCK === "1";
 
 /** The model ID recorded on drafts and events. */
@@ -27,16 +34,37 @@ const MOCK_DRAFTS = {
 
 type CallOptions = Parameters<MockLanguageModelV4["doStream"]>[0];
 
-/** Picks the mock draft for the platform named in the instructions. */
-function mockDraft({ prompt }: CallOptions) {
-  const system = prompt
-    .filter((m) => m.role === "system")
-    .map((m) => m.content)
+const textOf = (options: CallOptions, role: "system" | "user") =>
+  options.prompt
+    .filter((m) => m.role === role)
+    .map((m) => (typeof m.content === "string" ? m.content : m.content.map((p) => ("text" in p ? p.text : "")).join("")))
     .join("\n");
-  const platform = (system.match(/^Platform: (LinkedIn|X|Bluesky)\./m)?.[1] ??
+
+/**
+ * Picks the mock draft for the platform named in the instructions. Test-only
+ * directives in the idea shape the result: [mock:fail:<platform>],
+ * [mock:empty], [mock:slow], [mock:long] (over every limit).
+ */
+function mockPlan(options: CallOptions) {
+  const platform = (textOf(options, "system").match(/^Platform: (LinkedIn|X|Bluesky)\./m)?.[1] ??
     "LinkedIn") as keyof typeof MOCK_DRAFTS;
-  return MOCK_DRAFTS[platform];
+  const idea = textOf(options, "user");
+  const long = idea.includes("[mock:long]");
+  const text = idea.includes("[mock:empty]")
+    ? ""
+    : long
+      ? platform === "X"
+        ? `1/ ${"Over the limit. ".repeat(20)}\n\n2/ A short second tweet.`
+        : `${MOCK_DRAFTS[platform]} ${"Much longer than the platform allows. ".repeat(platform === "LinkedIn" ? 90 : 10)}`
+      : MOCK_DRAFTS[platform];
+  return {
+    text,
+    fail: idea.toLowerCase().includes(`[mock:fail:${platform.toLowerCase()}]`),
+    delay: idea.includes("[mock:slow]") ? 250 : 15,
+  };
 }
+
+const mockDraft = (options: CallOptions) => mockPlan(options).text;
 
 const mockUsage = (words: number) => ({
   inputTokens: { total: 0, noCache: 0, cacheRead: undefined, cacheWrite: undefined },
@@ -56,14 +84,16 @@ function mockModel() {
       };
     },
     doStream: async (options) => {
+      const plan = mockPlan(options);
+      if (plan.fail) throw new Error("Mock failure requested by the idea");
       // A few words per chunk, like a real stream.
-      const words = mockDraft(options).match(/\S+\s*/g) ?? [];
+      const words = plan.text.match(/\S+\s*/g) ?? [];
       const deltas = [];
       for (let i = 0; i < words.length; i += 3) deltas.push(words.slice(i, i + 3).join(""));
 
       return {
         stream: simulateReadableStream({
-          chunkDelayInMs: 15,
+          chunkDelayInMs: plan.delay,
           chunks: [
             { type: "text-start", id: "text-1" },
             ...deltas.map((delta) => ({ type: "text-delta" as const, id: "text-1", delta })),

@@ -28,7 +28,9 @@ test("streams a draft with the mock model and saves it (AC-12, AC-24)", async ({
   const id = await seedPost("Clients buy outcomes, not hours.");
   const res = await request.post(`/api/posts/${id}/generate/x`);
   expect(res.status()).toBe(200);
-  expect(await res.text()).toMatch(/^1\/ /);
+  const body = await res.text();
+  expect(body).toMatch(/^1\/ /);
+  expect(body.endsWith('\u001e{"ok":true}')).toBe(true);
 
   const [draft] = await sql`select content, model from drafts where post_id = ${id} and platform = 'x'`;
   expect(draft.model).toBe("mock");

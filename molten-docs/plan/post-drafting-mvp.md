@@ -53,11 +53,13 @@ The deadline is ~2026-11-25, so the plan uses no extra libraries beyond the expe
     - *Changed in 1.4 (2026-11-18):* Neon's email one-time-code sign-in requires the branch's "Sign-up and Sign-in with Email" setting, which is the email-and-password switch, so it stays **on** for every branch. On `main` (and the branches cloned from it) the password path is closed with `require_email_verification: true` and `send_verification_email_on_sign_up: false`. A password sign-up through the API can never sign in, while code and Google sign-ins verify the email and work. Task 1.6 makes the seeded E2E user's email verified on `test`.
 4. **Mutations vs streaming:**
    - Posts, draft edits, and copy events use Server Actions (`app/(app)/actions.ts`, `app/(app)/posts/[postId]/actions.ts`). These are thin wrappers over `lib/posts.ts`, `lib/drafts.ts` and `lib/events.ts`, which take `userId` explicitly so integration tests can call them without Next.
-   - Generation is a **Route Handler** (`POST /api/posts/[postId]/generate/[platform]`) that returns AI SDK 7 `streamText(...).toTextStreamResponse()`. The client reads it with `fetch` and a `ReadableStream` reader, so we don't need `@ai-sdk/react`.
+   - Generation is a **Route Handler** (`POST /api/posts/[postId]/generate/[platform]`) that streams the draft as plain text from AI SDK 7 `streamText`. The client reads it with `fetch` and a `ReadableStream` reader, so we don't need `@ai-sdk/react`.
    - The draft is persisted on the server when the stream completes. If the stream aborts, the partial text is discarded and *generation failed* is recorded.
+   - *Changed in 3.2 (2026-11-18):* the stream ends with an in-band result, a record separator then `{"ok":true}` or `{"ok":false,…}` (`lib/domain/draft-stream.ts`), and the connection always closes cleanly. Signalling failure by erroring the stream made Chrome silently retry the POST up to 6 times, each retry a new model call and rate-limit hit. A stream with no result counts as failed.
 5. **Model.** `lib/ai/model.ts` reads `AI_MODEL`. The default is **`anthropic/claude-sonnet-5.5`**, confirmed on AI Gateway on 2026-11-18. This resolves OQ-2; the spec's `claude-sonnet-5-5` isn't a valid Gateway ID.
    - With `AI_MOCK=1`, the module returns AI SDK's mock language model, for integration tests and Playwright.
    - Gateway auth uses `AI_GATEWAY_API_KEY` locally and OIDC on Vercel.
+   - *Added in 3.2 (2026-11-18):* calls use `reasoning: "low"`. At the provider default, Sonnet 5.5 thought for ~3–5 s before the first word of LinkedIn and X drafts. At `low`, first text arrives in ~1 s, which meets the ~3 s p50 target. Re-check quality at checkpoint 3.
 6. **Draft storage.** `drafts.content` and `drafts.generated_content` are `text[]`:
    - one element for LinkedIn and Bluesky
    - one element per tweet for X

@@ -10,7 +10,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { config } from "dotenv";
 import { generateText } from "ai";
 import { BANNED_OPENERS, buildPrompt } from "../lib/ai/prompts.ts";
-import { getModel, modelId } from "../lib/ai/model.ts";
+import { getModel, modelId, REASONING } from "../lib/ai/model.ts";
 import { PLATFORMS, PLATFORM_FORMATS, type Platform } from "../lib/platforms.ts";
 
 config({ path: ".env.local", quiet: true });
@@ -63,6 +63,7 @@ async function draft(platform: Platform, idea: string) {
   try {
     const { text } = await generateText({
       model: getModel(),
+      reasoning: REASONING,
       ...buildPrompt(platform, idea),
       abortSignal: AbortSignal.timeout(90_000),
     });

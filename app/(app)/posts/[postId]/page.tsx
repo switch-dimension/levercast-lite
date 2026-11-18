@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PostEditor } from "@/components/editor/post-editor";
 import { requireUser } from "@/lib/dal";
+import { toEditorDraft } from "@/lib/domain/editor-draft";
+import { getDrafts } from "@/lib/drafts";
 import { getPost } from "@/lib/posts";
 
 // The editor needs the post before it can show anything, so it blocks on the
@@ -11,11 +13,12 @@ export const instant = false;
 
 export const metadata: Metadata = { title: "Post · Levercast" };
 
-export default async function PostPage({ params }: PageProps<"/posts/[postId]">) {
+export default async function PostPage({ params, searchParams }: PageProps<"/posts/[postId]">) {
   const { postId } = await params;
   const user = await requireUser();
   const post = await getPost(user.id, postId);
   if (!post) notFound();
+  const [drafts, { generate }] = await Promise.all([getDrafts(user.id, post.id), searchParams]);
 
   return (
     <PostEditor
@@ -25,6 +28,8 @@ export default async function PostPage({ params }: PageProps<"/posts/[postId]">)
         ideaUpdatedAt: post.ideaUpdatedAt.toISOString(),
         createdAt: post.createdAt.toISOString(),
       }}
+      initialDrafts={drafts.map(toEditorDraft)}
+      autoGenerate={generate === "1"}
     />
   );
 }

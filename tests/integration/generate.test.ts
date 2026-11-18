@@ -6,6 +6,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { drafts, events, posts } from "@/db/schema";
 import { generateDraft } from "@/lib/ai/generate";
+import { readDraftStream } from "@/lib/domain/draft-stream";
 import { createPost } from "@/lib/posts";
 
 const users: string[] = [];
@@ -75,7 +76,10 @@ describe("generateDraft", () => {
       modelId: "test-model",
     });
     expect(res.status).toBe(200);
-    expect(await res.text()).toBe("Clients buy outcomes, not hours.");
+    expect(readDraftStream(await res.text())).toEqual({
+      text: "Clients buy outcomes, not hours.",
+      result: { ok: true },
+    });
 
     const draft = await draftFor(post.id, "linkedin");
     expect(draft.content).toEqual(["Clients buy outcomes, not hours."]);
@@ -104,13 +108,16 @@ describe("generateDraft", () => {
     ["the model call throws", () => throwingModel()],
     ["the stream reports an error", () => streamingModel(["Half a dr"], { errorPart: true })],
     ["the output is empty", () => streamingModel(["   "])],
-  ])("when %s: errors the stream, records failed, and keeps the previous draft (AC-16)", async (_, makeModel) => {
+  ])("when %s: reports failure in-band, records failed, and keeps the previous draft (AC-16)", async (_, makeModel) => {
     const userId = newUser();
     const post = await createPost(userId, "Idea");
     await (await generateDraft({ userId, post, platform: "x", model: streamingModel(["1/ Earlier draft"]) })).text();
 
     const res = await generateDraft({ userId, post, platform: "x", model: makeModel() });
-    await expect(res.text()).rejects.toThrow();
+    // The stream closes cleanly (a broken connection makes browsers retry the
+    // POST); the failure is in the result.
+    expect(res.status).toBe(200);
+    expect(readDraftStream(await res.text()).result).toMatchObject({ ok: false });
 
     expect((await draftFor(post.id, "x")).content).toEqual(["1/ Earlier draft"]);
     const log = await eventsFor(post.id);

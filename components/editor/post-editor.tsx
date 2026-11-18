@@ -1,63 +1,93 @@
 "use client";
 
-import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { loadDrafts } from "@/app/(app)/posts/[postId]/actions";
 import { DeletePostDialog } from "@/components/editor/delete-post-dialog";
+import { DraftPanel } from "@/components/editor/draft-panel";
+import { StatusStrip } from "@/components/editor/status-strip";
 import { IdeaBox } from "@/components/idea-box";
+import { useGeneration } from "@/hooks/use-generation";
+import type { DraftState, EditorDraft } from "@/lib/domain/editor-draft";
 import { relativeTime } from "@/lib/domain/post-status";
-import { PLATFORMS, PLATFORM_FORMATS, type Platform } from "@/lib/platforms";
+import { PLATFORMS, type Platform } from "@/lib/platforms";
 
 export type EditorPost = { id: string; idea: string; ideaUpdatedAt: string; createdAt: string };
 
-const FORMAT_HINT: Record<Platform, string> = {
-  linkedin: `up to ${PLATFORM_FORMATS.linkedin.charLimit.toLocaleString("en-US")} characters`,
-  x: `${PLATFORM_FORMATS.x.minTweets}–${PLATFORM_FORMATS.x.maxTweets} tweets, ${PLATFORM_FORMATS.x.charLimit} each`,
-  bluesky: `up to ${PLATFORM_FORMATS.bluesky.charLimit} characters`,
+type Props = {
+  post: EditorPost;
+  initialDrafts: EditorDraft[];
+  /** Generate was clicked on Home: start all three on arrival. */
+  autoGenerate?: boolean;
 };
 
+const byPlatform = (drafts: EditorDraft[]) =>
+  Object.fromEntries(drafts.map((d) => [d.platform, d])) as Partial<Record<Platform, EditorDraft>>;
+
 /** The post editor: the idea at the top, one section per platform below. */
-export function PostEditor({ post }: { post: EditorPost }) {
+export function PostEditor({ post, initialDrafts, autoGenerate = false }: Props) {
+  const router = useRouter();
+  const [drafts, setDrafts] = useState(() => byPlatform(initialDrafts));
+
+  const refreshDrafts = useCallback(async () => {
+    setDrafts(byPlatform(await loadDrafts(post.id)));
+  }, [post.id]);
+  const generation = useGeneration(post.id, refreshDrafts);
+  const { generate } = generation;
+
+  // Arriving from Home's Generate: start once, and drop ?generate=1 so a
+  // reload doesn't regenerate. The start waits a tick so React's development
+  // mount-unmount-mount cycle (which aborts open streams) can't cancel it.
+  const started = useRef(false);
+  useEffect(() => {
+    if (!autoGenerate || started.current) return;
+    const timer = setTimeout(() => {
+      started.current = true;
+      router.replace(`/posts/${post.id}`, { scroll: false });
+      void generate(PLATFORMS);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [autoGenerate, generate, post.id, router]);
+
+  const stateOf = (platform: Platform): DraftState => {
+    const run = generation.runs[platform];
+    if (run?.status === "writing") return "writing";
+    if (run?.status === "failed") return "failed";
+    return drafts[platform] ? "ready" : "empty";
+  };
+  const states = Object.fromEntries(PLATFORMS.map((p) => [p, stateOf(p)])) as Record<Platform, DraftState>;
+  const hasDrafts = PLATFORMS.some((p) => drafts[p]);
+
   return (
     <>
-      <nav aria-label="Post" className="sticky top-0 z-10 border-b border-border bg-surface/95">
-        <div className="mx-auto flex w-full max-w-[760px] flex-wrap items-center gap-1 px-5 py-2 md:px-8">
-          <Link href="/posts" className="btn btn-ghost -ml-2.5">
-            ← My posts
-          </Link>
-          <span className="flex-1" />
-          {PLATFORMS.map((platform) => (
-            <a key={platform} href={`#draft-${platform}`} className="btn btn-ghost btn-sm gap-2">
-              <span aria-hidden className="dot dot-empty" />
-              {PLATFORM_FORMATS[platform].label}
-              <span className="hidden text-caption font-normal text-neutral sm:inline">Not generated</span>
-            </a>
-          ))}
-        </div>
-      </nav>
+      <StatusStrip states={states} />
 
       <main className="mx-auto w-full max-w-[760px] flex-1 px-5 pb-28 pt-8 md:px-8 md:pt-12">
-        <IdeaBox variant="editor" postId={post.id} initialIdea={post.idea} />
+        <IdeaBox
+          variant="editor"
+          postId={post.id}
+          initialIdea={post.idea}
+          generateLabel={hasDrafts ? "Regenerate all" : "Generate drafts"}
+          generateDisabled={generation.anyWriting}
+          onGenerate={() => void generate(PLATFORMS)}
+        >
+          {generation.notice && (
+            <p role="status" className="mt-3 rounded-sm border border-border bg-secondary px-3.5 py-3 text-ui-body">
+              {generation.notice}
+            </p>
+          )}
+        </IdeaBox>
 
         <div className="mt-14 grid gap-12">
           {PLATFORMS.map((platform) => (
-            <section
+            <DraftPanel
               key={platform}
-              id={`draft-${platform}`}
-              aria-labelledby={`draft-${platform}-heading`}
-              className="scroll-mt-20"
-            >
-              <div className="mb-4 flex items-baseline gap-3 border-b border-primary pb-2.5">
-                <h2 id={`draft-${platform}-heading`} className="font-serif text-headline-sm">
-                  {PLATFORM_FORMATS[platform].label}
-                </h2>
-                <span className="text-caption text-neutral">{FORMAT_HINT[platform]}</span>
-                <span className="flex-1" />
-                <span className="inline-flex items-center gap-2 text-caption text-neutral">
-                  <span aria-hidden className="dot dot-empty" />
-                  Not generated
-                </span>
-              </div>
-              <p className="py-2 font-serif text-[17px] italic text-neutral">Not generated yet.</p>
-            </section>
+              platform={platform}
+              state={states[platform]}
+              draft={drafts[platform]}
+              run={generation.runs[platform]}
+              onRetry={() => void generate([platform])}
+            />
           ))}
         </div>
 
