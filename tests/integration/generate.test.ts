@@ -7,7 +7,7 @@ import { db } from "@/db";
 import { drafts, events, posts } from "@/db/schema";
 import { generateDraft } from "@/lib/ai/generate";
 import { readDraftStream } from "@/lib/domain/draft-stream";
-import { createPost } from "@/lib/posts";
+import { createPost, updateIdea } from "@/lib/posts";
 
 const users: string[] = [];
 const newUser = () => {
@@ -103,6 +103,48 @@ describe("generateDraft", () => {
     const draft = await draftFor(post.id, "x");
     expect(draft.content).toEqual(["1/ One", "2/ Two", "3/ Three"]);
     expect(draft.generatedContent).toEqual(draft.content);
+  });
+
+  it("a draft generated from the current idea isn't stale; editing the idea afterwards makes it stale (AC-23)", async () => {
+    const userId = newUser();
+    const post = await createPost(userId, "Idea");
+    await (await generateDraft({ userId, post, platform: "linkedin", model: streamingModel(["Draft"]) })).text();
+    const fresh = await draftFor(post.id, "linkedin");
+    // Stamped with the generation time, not the idea's.
+    expect(fresh.generatedAt.getTime()).toBeGreaterThan(post.ideaUpdatedAt.getTime());
+
+    const edited = (await updateIdea(userId, post.id, "A new idea"))!;
+    expect(fresh.generatedAt.getTime()).toBeLessThan(edited.ideaUpdatedAt.getTime());
+    expect((await draftFor(post.id, "linkedin")).content).toEqual(["Draft"]);
+  });
+
+  it("a draft started before an idea edit finishes against the old idea, then counts as stale (4.4)", async () => {
+    const userId = newUser();
+    const post = await createPost(userId, "Old idea");
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const inner = streamingModel(["From the old idea"]);
+    const gated = new MockLanguageModelV4({
+      doStream: async (options) => {
+        await gate;
+        return inner.doStream(options);
+      },
+    });
+
+    const res = await generateDraft({ userId, post, platform: "bluesky", model: gated });
+    const edited = (await updateIdea(userId, post.id, "New idea"))!;
+    release();
+    await res.text();
+
+    const draft = await draftFor(post.id, "bluesky");
+    expect(draft.content).toEqual(["From the old idea"]);
+    expect(draft.generatedAt.getTime()).toBeLessThan(edited.ideaUpdatedAt.getTime());
+
+    // Regenerating against the new idea clears it.
+    await (await generateDraft({ userId, post: edited, platform: "bluesky", model: streamingModel(["New"]) })).text();
+    expect((await draftFor(post.id, "bluesky")).generatedAt.getTime()).toBeGreaterThanOrEqual(
+      edited.ideaUpdatedAt.getTime(),
+    );
   });
 
   it("regenerating replaces the draft and records another started + completed", async () => {

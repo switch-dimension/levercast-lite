@@ -88,6 +88,7 @@ export function DraftPanel({ postId, platform, state, draft, run, onRetry, onEdi
                 postId={postId}
                 platform={platform}
                 draft={draft}
+                stale={state === "stale"}
                 confirm={confirm}
                 onEdit={onEdit}
                 onRegenerate={onRegenerate}
@@ -107,6 +108,8 @@ type BodyProps = {
   postId: string;
   platform: Platform;
   draft: EditorDraft;
+  /** The idea changed since this draft was generated (FR-20). */
+  stale: boolean;
   confirm?: ConfirmProps;
   onEdit: (content: string[]) => void;
   onRegenerate: () => void;
@@ -116,7 +119,7 @@ type BodyProps = {
  * The editable draft. Remounted for each new generation, so a pending edit is
  * saved (on unmount) before the new draft arrives, never after it.
  */
-function DraftBody({ postId, platform, draft, confirm, onEdit, onRegenerate }: BodyProps) {
+function DraftBody({ postId, platform, draft, stale, confirm, onEdit, onRegenerate }: BodyProps) {
   const save = useCallback((content: string[]) => saveDraft(postId, platform, content), [postId, platform]);
   const autosave = useAutosave(save);
   const { label } = PLATFORM_FORMATS[platform];
@@ -140,6 +143,15 @@ function DraftBody({ postId, platform, draft, confirm, onEdit, onRegenerate }: B
   const text = joinThread(draft.content);
   return (
     <>
+      {stale && (
+        <div className="mb-3 flex flex-wrap items-center gap-2.5 rounded-sm border-l-[3px] border-accent-strong bg-tertiary-tint py-2 pl-3 pr-2 text-[13px]">
+          <span>Your idea changed since this draft.</span>
+          <span className="flex-1" />
+          <button type="button" className="btn btn-ghost btn-sm" disabled={!!confirm} onClick={onRegenerate}>
+            Regenerate
+          </button>
+        </div>
+      )}
       {copyBlocked && (
         <p role="alert" className="mb-3 rounded-sm bg-[#fbeeed] px-3.5 py-3 text-ui-body text-error">
           Couldn&apos;t copy. Select the text and copy it manually.

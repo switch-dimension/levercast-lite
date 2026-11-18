@@ -8,7 +8,7 @@ import { DraftPanel } from "@/components/editor/draft-panel";
 import { StatusStrip } from "@/components/editor/status-strip";
 import { IdeaBox } from "@/components/idea-box";
 import { useGeneration } from "@/hooks/use-generation";
-import { isEdited, planRegenerateAll } from "@/lib/domain/draft-state";
+import { draftState, isEdited, planRegenerateAll } from "@/lib/domain/draft-state";
 import type { DraftState, EditorDraft } from "@/lib/domain/editor-draft";
 import { relativeTime } from "@/lib/domain/post-status";
 import { PLATFORMS, type Platform } from "@/lib/platforms";
@@ -29,6 +29,8 @@ const byPlatform = (drafts: EditorDraft[]) =>
 export function PostEditor({ post, initialDrafts, autoGenerate = false }: Props) {
   const router = useRouter();
   const [drafts, setDrafts] = useState(() => byPlatform(initialDrafts));
+  // Moves when an idea edit saves; drafts generated before it are stale.
+  const [ideaUpdatedAt, setIdeaUpdatedAt] = useState(post.ideaUpdatedAt);
 
   // Only the platform that finished is replaced, so unsaved edits in the
   // other panels survive.
@@ -83,13 +85,12 @@ export function PostEditor({ post, initialDrafts, autoGenerate = false }: Props)
     return () => clearTimeout(timer);
   }, [autoGenerate, generate, post.id, router]);
 
-  const stateOf = (platform: Platform): DraftState => {
-    const run = generation.runs[platform];
-    if (run?.status === "writing") return "writing";
-    if (run?.status === "failed") return "failed";
-    return drafts[platform] ? "ready" : "empty";
-  };
-  const states = Object.fromEntries(PLATFORMS.map((p) => [p, stateOf(p)])) as Record<Platform, DraftState>;
+  const states = Object.fromEntries(
+    PLATFORMS.map((p) => [
+      p,
+      draftState({ run: generation.runs[p]?.status, draft: drafts[p], ideaUpdatedAt }),
+    ]),
+  ) as Record<Platform, DraftState>;
   const hasDrafts = PLATFORMS.some((p) => drafts[p]);
 
   return (
@@ -104,6 +105,7 @@ export function PostEditor({ post, initialDrafts, autoGenerate = false }: Props)
           generateLabel={hasDrafts ? "Regenerate all" : "Generate drafts"}
           generateDisabled={generation.anyWriting}
           onGenerate={regenerateAll}
+          onIdeaSaved={setIdeaUpdatedAt}
         >
           {generation.notice && (
             <p role="status" className="mt-3 rounded-sm border border-border bg-secondary px-3.5 py-3 text-ui-body">

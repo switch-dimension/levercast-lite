@@ -20,7 +20,7 @@ const TIMEOUT_MS = 90_000;
 
 type Args = {
   userId: string;
-  post: Pick<Post, "id" | "idea">;
+  post: Pick<Post, "id" | "idea" | "ideaUpdatedAt">;
   platform: Platform;
   /** Aborts the model call, e.g. the incoming request's signal. */
   signal?: AbortSignal;
@@ -90,7 +90,14 @@ export async function generateDraft({ userId, post, platform, signal, model, mod
         if (abort.signal.aborted) throw new Error("Generation was stopped before it finished");
         const content = toContent(platform, text);
         if (!content) throw new Error("The model returned an empty draft");
-        await saveGeneratedDraft({ userId, postId: post.id, platform, content, model: usedModel });
+        await saveGeneratedDraft({
+          userId,
+          postId: post.id,
+          platform,
+          content,
+          model: usedModel,
+          ideaUpdatedAt: post.ideaUpdatedAt,
+        });
         controller.enqueue(encoder.encode(encodeResult({ ok: true })));
       } catch (error) {
         await fail(abort.signal.aborted ? "Generation was stopped before it finished" : error).catch(() => {});
