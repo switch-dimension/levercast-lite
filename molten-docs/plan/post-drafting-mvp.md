@@ -112,7 +112,7 @@ Task 1.5 adds the `user.before_create` webhook.
 Database branch: **yes, Neon.**
 - Create a `post-drafting-mvp` branch from `main` *after* Neon Auth is enabled on `main`, and use it for local development. Check in task 1.4 that the auth config carries over to the child branch (Neon's "branching authentication" docs); if it doesn't, enable it there too.
 - The existing `test` branch (`br-noisy-rain-bb3bx5sn`) serves integration and E2E tests.
-- Task 1.1 applies the migration to both branches. `main` is migrated at ship time.
+- Task 1.1 applies the migration to the `test` branch (`npm run db:migrate:test`). The dev branch doesn't exist until 1.4, so 1.4 migrates it right after creating it and points `DATABASE_URL` at it. `main` is migrated at ship time. Until then, `DATABASE_URL` in `.env.local` points at `main`, so don't run plain `npm run db:migrate`.
 
 ## Phase 1 — Foundations and access
 
