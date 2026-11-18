@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { DeletePostDialog } from "@/components/editor/delete-post-dialog";
 import { IdeaBox } from "@/components/idea-box";
 import { relativeTime } from "@/lib/domain/post-status";
 import { PLATFORMS, PLATFORM_FORMATS, type Platform } from "@/lib/platforms";
@@ -64,6 +65,7 @@ export function PostEditor({ post }: { post: EditorPost }) {
           <span className="text-caption text-neutral">
             Created <time dateTime={post.createdAt}>{relativeTime(new Date(post.createdAt))}</time>
           </span>
+          <DeletePostDialog postId={post.id} />
         </footer>
       </main>
     </>
