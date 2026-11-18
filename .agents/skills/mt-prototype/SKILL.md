@@ -12,7 +12,7 @@ metadata:
 
 # Prototype
 
-Build the smallest thing that answers the riskiest question. Prototypes are for learning, not shipping.
+Build the smallest thing that answers the riskiest question. Prototypes are for learning, not shipping. Also used for building html mockups of interfaces to explore UX ideas. Ask the user how many variations they would like the recommendation is 3. These are created as html mockups with dummy data or json and are designed to be throwaway inspiration for the model to use for later builds. 
 
 **Optional step.** Run this only when discovery leaves a real unknown — usually technical feasibility or one risky interaction. If the shape is already clear, skip straight to **mt-spec**.
 
