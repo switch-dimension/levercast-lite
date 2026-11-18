@@ -5,6 +5,14 @@ import { createSaveQueue } from "@/lib/autosave";
 
 export type SaveStatus = "idle" | "pending" | "saving" | "saved" | "error";
 
+export const SAVE_TEXT: Record<SaveStatus, string> = {
+  idle: "",
+  pending: "Saving…",
+  saving: "Saving…",
+  saved: "Saved",
+  error: "Couldn't save. Check your connection, then keep typing to try again.",
+};
+
 /**
  * Debounced autosave (~1 s after typing stops) through a one-at-a-time save
  * queue. `flush()` saves anything waiting right away and resolves to whether

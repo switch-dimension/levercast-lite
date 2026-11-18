@@ -29,10 +29,22 @@ export function PostEditor({ post, initialDrafts, autoGenerate = false }: Props)
   const router = useRouter();
   const [drafts, setDrafts] = useState(() => byPlatform(initialDrafts));
 
-  const refreshDrafts = useCallback(async () => {
-    setDrafts(byPlatform(await loadDrafts(post.id)));
-  }, [post.id]);
-  const generation = useGeneration(post.id, refreshDrafts);
+  // Only the platform that finished is replaced, so unsaved edits in the
+  // other panels survive.
+  const refreshDraft = useCallback(
+    async (platform: Platform) => {
+      const fresh = byPlatform(await loadDrafts(post.id))[platform];
+      setDrafts((prev) => ({ ...prev, [platform]: fresh }));
+    },
+    [post.id],
+  );
+  const generation = useGeneration(post.id, refreshDraft);
+
+  const editDraft = (platform: Platform, content: string[]) =>
+    setDrafts((prev) => {
+      const draft = prev[platform];
+      return draft ? { ...prev, [platform]: { ...draft, content } } : prev;
+    });
   const { generate } = generation;
 
   // Arriving from Home's Generate: start once, and drop ?generate=1 so a
@@ -82,11 +94,13 @@ export function PostEditor({ post, initialDrafts, autoGenerate = false }: Props)
           {PLATFORMS.map((platform) => (
             <DraftPanel
               key={platform}
+              postId={post.id}
               platform={platform}
               state={states[platform]}
               draft={drafts[platform]}
               run={generation.runs[platform]}
               onRetry={() => void generate([platform])}
+              onEdit={(content) => editDraft(platform, content)}
             />
           ))}
         </div>

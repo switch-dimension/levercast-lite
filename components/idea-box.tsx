@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { saveIdea } from "@/app/(app)/actions";
-import { useAutosave, type SaveStatus } from "@/hooks/use-autosave";
+import { SAVE_TEXT, useAutosave } from "@/hooks/use-autosave";
 import { checkIdea, IDEA_MAX } from "@/lib/domain/idea";
 
 type Props = {
@@ -20,14 +20,6 @@ type Props = {
   /** Editor: called after each save with the idea's new timestamp. */
   onIdeaSaved?: (ideaUpdatedAt: string) => void;
   children?: ReactNode;
-};
-
-const SAVE_TEXT: Record<SaveStatus, string> = {
-  idle: "",
-  pending: "Saving…",
-  saving: "Saving…",
-  saved: "Saved",
-  error: "Couldn't save. Check your connection, then keep typing to try again.",
 };
 
 export function IdeaBox({

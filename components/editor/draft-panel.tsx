@@ -1,7 +1,11 @@
 "use client";
 
+import { useCallback } from "react";
+import { saveDraft } from "@/app/(app)/posts/[postId]/actions";
 import { CharCount } from "@/components/editor/char-count";
+import { DraftTextarea } from "@/components/editor/draft-textarea";
 import { XThreadPanel } from "@/components/editor/x-thread-panel";
+import { SAVE_TEXT, useAutosave } from "@/hooks/use-autosave";
 import type { PanelRun } from "@/hooks/use-generation";
 import { isOverLimit } from "@/lib/domain/limits";
 import { DRAFT_STATE_LABEL, type DraftState, type EditorDraft } from "@/lib/domain/editor-draft";
@@ -14,15 +18,17 @@ const FORMAT_HINT: Record<Platform, string> = {
 };
 
 type Props = {
+  postId: string;
   platform: Platform;
   state: DraftState;
   draft?: EditorDraft;
   run?: PanelRun;
   onRetry: () => void;
+  onEdit: (content: string[]) => void;
 };
 
 /** One platform's section in the editor (FR-10, FR-14). */
-export function DraftPanel({ platform, state, draft, run, onRetry }: Props) {
+export function DraftPanel({ postId, platform, state, draft, run, onRetry, onEdit }: Props) {
   const { label } = PLATFORM_FORMATS[platform];
   const writing = run?.status === "writing";
 
@@ -65,7 +71,7 @@ export function DraftPanel({ platform, state, draft, run, onRetry }: Props) {
               </div>
             )}
             {draft ? (
-              <DraftText platform={platform} draft={draft} />
+              <DraftBody key={draft.generatedAt} postId={postId} platform={platform} draft={draft} onEdit={onEdit} />
             ) : (
               run?.status !== "failed" && (
                 <p className="py-2 font-serif text-[17px] italic text-neutral">Not generated yet.</p>
@@ -78,29 +84,53 @@ export function DraftPanel({ platform, state, draft, run, onRetry }: Props) {
   );
 }
 
-function DraftText({ platform, draft }: { platform: Platform; draft: EditorDraft }) {
-  if (platform === "x") {
-    return (
-      <>
-        <XThreadPanel tweets={draft.content} />
-        <div className="mt-3 flex items-center justify-end">
-          <span className="text-caption text-neutral">{draft.content.length} tweets</span>
-        </div>
-      </>
-    );
+type BodyProps = {
+  postId: string;
+  platform: Platform;
+  draft: EditorDraft;
+  onEdit: (content: string[]) => void;
+};
+
+/**
+ * The editable draft. Remounted for each new generation, so a pending edit is
+ * saved (on unmount) before the new draft arrives, never after it.
+ */
+function DraftBody({ postId, platform, draft, onEdit }: BodyProps) {
+  const save = useCallback((content: string[]) => saveDraft(postId, platform, content), [postId, platform]);
+  const autosave = useAutosave(save);
+  const { label } = PLATFORM_FORMATS[platform];
+
+  function change(content: string[]) {
+    onEdit(content);
+    autosave.schedule(content);
   }
+
   const text = draft.content.join("\n\n");
   return (
     <>
-      <p
-        className={`whitespace-pre-wrap rounded-sm px-2.5 py-2 font-serif text-[18px] leading-[1.65] -mx-2.5 ${
-          isOverLimit(platform, text) ? "bg-[#fbeeed]" : ""
-        }`}
-      >
-        {text}
-      </p>
-      <div className="mt-3 flex items-center justify-end">
-        <CharCount platform={platform} text={text} />
+      {platform === "x" ? (
+        <XThreadPanel tweets={draft.content} onChange={change} />
+      ) : (
+        <DraftTextarea
+          label={`${label} draft`}
+          value={text}
+          over={isOverLimit(platform, text)}
+          onChange={(value) => change([value])}
+        />
+      )}
+      <div className="mt-3 flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
+        {platform === "x" ? (
+          <span className="text-caption text-neutral">{draft.content.length} tweets</span>
+        ) : (
+          <CharCount platform={platform} text={text} />
+        )}
+        <span
+          role="status"
+          className={`text-caption ${autosave.status === "error" ? "text-error" : "text-neutral"}`}
+        >
+          {SAVE_TEXT[autosave.status]}
+        </span>
+        <span className="flex-1" />
       </div>
     </>
   );

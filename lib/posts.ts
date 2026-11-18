@@ -10,9 +10,10 @@ import { IDEA_SAVE_MAX } from "@/lib/domain/idea";
 import { insertEvent } from "@/lib/events";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const isUuid = (id: string) => UUID.test(id);
+export const isUuid = (id: string) => UUID.test(id);
 
-const owned = (userId: string, postId: string) =>
+/** Where-clause for the user's own, non-deleted post. */
+export const owned = (userId: string, postId: string) =>
   and(eq(posts.id, postId), eq(posts.userId, userId), isNull(posts.deletedAt));
 
 const clean = (idea: string) => idea.trim().slice(0, IDEA_SAVE_MAX);
