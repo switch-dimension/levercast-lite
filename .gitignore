@@ -15,6 +15,7 @@
 
 # next.js
 /.next/
+/.next-e2e/
 /out/
 
 # production
@@ -45,3 +46,8 @@ next-env.d.ts
 
 # prompt-check output (contains private ideas)
 /prompt-check-*.md
+
+# playwright
+/test-results/
+/playwright-report/
+/e2e/.auth/

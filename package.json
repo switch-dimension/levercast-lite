@@ -15,7 +15,8 @@
     "test:watch": "vitest",
     "db:migrate:test": "DRIZZLE_TARGET=test drizzle-kit migrate",
     "prompt-check": "node scripts/prompt-check.ts",
-    "allow-email": "node --conditions=react-server scripts/allow-email.ts"
+    "allow-email": "node --conditions=react-server scripts/allow-email.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@neon/auth": "0.8.2",
