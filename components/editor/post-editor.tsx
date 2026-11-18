@@ -8,6 +8,7 @@ import { DraftPanel } from "@/components/editor/draft-panel";
 import { StatusStrip } from "@/components/editor/status-strip";
 import { IdeaBox } from "@/components/idea-box";
 import { useGeneration } from "@/hooks/use-generation";
+import { isEdited, planRegenerateAll } from "@/lib/domain/draft-state";
 import type { DraftState, EditorDraft } from "@/lib/domain/editor-draft";
 import { relativeTime } from "@/lib/domain/post-status";
 import { PLATFORMS, type Platform } from "@/lib/platforms";
@@ -39,6 +40,27 @@ export function PostEditor({ post, initialDrafts, autoGenerate = false }: Props)
     [post.id],
   );
   const generation = useGeneration(post.id, refreshDraft);
+
+  // Panels asking "Keep my edit / Replace it", and whether each took focus.
+  const [confirming, setConfirming] = useState<Partial<Record<Platform, boolean>>>({});
+  const closeConfirm = (platform: Platform) =>
+    setConfirming((prev) => {
+      const next = { ...prev };
+      delete next[platform];
+      return next;
+    });
+
+  function regenerate(platform: Platform) {
+    const draft = drafts[platform];
+    if (draft && isEdited(draft)) setConfirming((prev) => ({ ...prev, [platform]: true }));
+    else void generate([platform]);
+  }
+
+  function regenerateAll() {
+    const { now, confirm } = planRegenerateAll(drafts);
+    setConfirming(Object.fromEntries(confirm.map((p) => [p, false])));
+    if (now.length) void generate(now);
+  }
 
   const editDraft = (platform: Platform, content: string[]) =>
     setDrafts((prev) => {
@@ -81,7 +103,7 @@ export function PostEditor({ post, initialDrafts, autoGenerate = false }: Props)
           initialIdea={post.idea}
           generateLabel={hasDrafts ? "Regenerate all" : "Generate drafts"}
           generateDisabled={generation.anyWriting}
-          onGenerate={() => void generate(PLATFORMS)}
+          onGenerate={regenerateAll}
         >
           {generation.notice && (
             <p role="status" className="mt-3 rounded-sm border border-border bg-secondary px-3.5 py-3 text-ui-body">
@@ -101,6 +123,19 @@ export function PostEditor({ post, initialDrafts, autoGenerate = false }: Props)
               run={generation.runs[platform]}
               onRetry={() => void generate([platform])}
               onEdit={(content) => editDraft(platform, content)}
+              onRegenerate={() => regenerate(platform)}
+              confirm={
+                platform in confirming
+                  ? {
+                      autoFocus: confirming[platform]!,
+                      onKeep: () => closeConfirm(platform),
+                      onReplace: () => {
+                        closeConfirm(platform);
+                        void generate([platform]);
+                      },
+                    }
+                  : undefined
+              }
             />
           ))}
         </div>
