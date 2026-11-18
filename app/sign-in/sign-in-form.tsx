@@ -3,6 +3,7 @@
 import { useActionState, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { authClient } from "@/lib/auth/client";
+import { INVITE_ONLY_MESSAGE } from "@/lib/auth/messages";
 import { sendSignInCode, type SendCodeState } from "./actions";
 
 const field =
@@ -11,12 +12,19 @@ const primary =
   "inline-flex h-12 w-full items-center justify-center rounded-sm bg-primary px-[22px] text-label-md text-on-primary transition-colors duration-200 hover:bg-primary-hover active:translate-y-px disabled:cursor-not-allowed disabled:bg-border disabled:text-disabled";
 const secondary =
   "inline-flex h-12 w-full items-center justify-center rounded-sm border border-border bg-surface px-[21px] text-label-md text-on-surface transition-colors duration-200 hover:bg-secondary active:translate-y-px disabled:cursor-not-allowed disabled:text-disabled";
+// Better Auth appends ?error=<code> when a Google sign-in fails. A sign-up the
+// allowlist webhook rejected surfaces as one of these codes.
+const INVITE_ERRORS = /invit|not_invited|unable_to_create_user|sign_?up/i;
+
 const textButton =
   "min-h-11 text-label-md text-accent-strong underline-offset-4 hover:underline disabled:text-disabled";
 
 export function SignInForm() {
   const router = useRouter();
-  const googleFailed = useSearchParams().get("error") === "google";
+  const params = useSearchParams();
+  const googleError = params.get("error");
+  const redirectedNotInvited =
+    params.get("notice") === "invite-only" || (googleError !== null && INVITE_ERRORS.test(googleError));
   const [sendState, sendCode, sending] = useActionState<SendCodeState, FormData>(sendSignInCode, {
     status: "idle",
   });
@@ -35,7 +43,7 @@ export function SignInForm() {
     const { error } = await authClient.signIn.social({
       provider: "google",
       callbackURL: `${origin}/`,
-      errorCallbackURL: `${origin}/sign-in?error=google`,
+      errorCallbackURL: `${origin}/sign-in`,
     });
     if (error) setGooglePending(false);
   }
@@ -104,13 +112,19 @@ export function SignInForm() {
   }
 
   const sendError = sendState.status === "error" ? sendState : null;
+  const notInvited = sendState.status === "not-invited" || (sendState.status === "idle" && redirectedNotInvited);
 
   return (
     <div className="flex flex-col gap-6">
+      {notInvited && (
+        <p role="status" className="rounded-lg border border-border bg-surface p-5 font-serif text-body-md">
+          {INVITE_ONLY_MESSAGE}
+        </p>
+      )}
       <button type="button" onClick={signInWithGoogle} disabled={googlePending} className={secondary}>
         {googlePending ? "Opening Google…" : "Continue with Google"}
       </button>
-      {googleFailed && (
+      {googleError && !redirectedNotInvited && (
         <p role="alert" className="-mt-3 text-caption text-error">
           Google sign-in didn&rsquo;t finish. Try again, or use your email instead.
         </p>
