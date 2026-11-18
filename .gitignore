@@ -42,3 +42,6 @@ next-env.d.ts
 
 # claude code personal settings
 .claude/settings.local.json
+
+# prompt-check output (contains private ideas)
+/prompt-check-*.md

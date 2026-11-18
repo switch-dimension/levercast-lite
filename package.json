@@ -13,7 +13,8 @@
     "db:studio": "drizzle-kit studio",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:migrate:test": "DRIZZLE_TARGET=test drizzle-kit migrate"
+    "db:migrate:test": "DRIZZLE_TARGET=test drizzle-kit migrate",
+    "prompt-check": "node scripts/prompt-check.ts"
   },
   "dependencies": {
     "@neon/auth": "0.8.2",
@@ -38,5 +39,6 @@
     "tailwindcss": "4.3.3",
     "typescript": "^5",
     "vitest": "^5.1.1"
-  }
+  },
+  "type": "module"
 }
