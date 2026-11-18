@@ -1,13 +1,15 @@
 "use client";
 
-import { useCallback } from "react";
-import { saveDraft } from "@/app/(app)/posts/[postId]/actions";
+import { useCallback, useState } from "react";
+import { copyDraft, saveDraft } from "@/app/(app)/posts/[postId]/actions";
 import { CharCount } from "@/components/editor/char-count";
+import { CopyButton } from "@/components/editor/copy-button";
 import { DraftTextarea } from "@/components/editor/draft-textarea";
 import { XThreadPanel } from "@/components/editor/x-thread-panel";
 import { SAVE_TEXT, useAutosave } from "@/hooks/use-autosave";
 import type { PanelRun } from "@/hooks/use-generation";
 import { isOverLimit } from "@/lib/domain/limits";
+import { joinThread } from "@/lib/domain/thread";
 import { DRAFT_STATE_LABEL, type DraftState, type EditorDraft } from "@/lib/domain/editor-draft";
 import { PLATFORM_FORMATS, type Platform } from "@/lib/platforms";
 
@@ -100,16 +102,32 @@ function DraftBody({ postId, platform, draft, onEdit }: BodyProps) {
   const autosave = useAutosave(save);
   const { label } = PLATFORM_FORMATS[platform];
 
+  const [copyBlocked, setCopyBlocked] = useState(false);
+
   function change(content: string[]) {
     onEdit(content);
     autosave.schedule(content);
   }
 
-  const text = draft.content.join("\n\n");
+  // The clipboard already holds the text; this saves pending edits and
+  // records *draft copied*. A failure here costs only the event.
+  async function copied(tweet?: number) {
+    setCopyBlocked(false);
+    await autosave.flush();
+    await copyDraft(postId, platform, draft.content, tweet).catch(() => {});
+  }
+  const copyBlockedNow = () => setCopyBlocked(true);
+
+  const text = joinThread(draft.content);
   return (
     <>
+      {copyBlocked && (
+        <p role="alert" className="mb-3 rounded-sm bg-[#fbeeed] px-3.5 py-3 text-ui-body text-error">
+          Couldn&apos;t copy. Select the text and copy it manually.
+        </p>
+      )}
       {platform === "x" ? (
-        <XThreadPanel tweets={draft.content} onChange={change} />
+        <XThreadPanel tweets={draft.content} onChange={change} onCopied={copied} onCopyBlocked={copyBlockedNow} />
       ) : (
         <DraftTextarea
           label={`${label} draft`}
@@ -131,6 +149,12 @@ function DraftBody({ postId, platform, draft, onEdit }: BodyProps) {
           {SAVE_TEXT[autosave.status]}
         </span>
         <span className="flex-1" />
+        <CopyButton
+          label={platform === "x" ? "Copy thread" : "Copy"}
+          text={text}
+          onCopied={() => copied()}
+          onBlocked={copyBlockedNow}
+        />
       </div>
     </>
   );
