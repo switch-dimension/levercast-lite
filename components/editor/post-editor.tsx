@@ -8,6 +8,7 @@ import { DraftPanel } from "@/components/editor/draft-panel";
 import { StatusStrip } from "@/components/editor/status-strip";
 import { IdeaBox } from "@/components/idea-box";
 import { useGeneration } from "@/hooks/use-generation";
+import { isSignedOut, SignedOutError } from "@/lib/autosave";
 import { draftState, isEdited, planRegenerateAll } from "@/lib/domain/draft-state";
 import type { DraftState, EditorDraft } from "@/lib/domain/editor-draft";
 import { relativeTime } from "@/lib/domain/post-status";
@@ -36,7 +37,9 @@ export function PostEditor({ post, initialDrafts, autoGenerate = false }: Props)
   // other panels survive.
   const refreshDraft = useCallback(
     async (platform: Platform) => {
-      const fresh = byPlatform(await loadDrafts(post.id))[platform];
+      const loaded = await loadDrafts(post.id);
+      if (isSignedOut(loaded)) throw new SignedOutError();
+      const fresh = byPlatform(loaded)[platform];
       setDrafts((prev) => ({ ...prev, [platform]: fresh }));
     },
     [post.id],

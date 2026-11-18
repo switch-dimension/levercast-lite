@@ -4,6 +4,7 @@ import { useCallback, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { saveIdea } from "@/app/(app)/actions";
 import { SAVE_TEXT, useAutosave } from "@/hooks/use-autosave";
+import { isSignedOut, SignedOutError } from "@/lib/autosave";
 import { checkIdea, IDEA_MAX } from "@/lib/domain/idea";
 
 type Props = {
@@ -41,6 +42,7 @@ export function IdeaBox({
   const save = useCallback(
     async (text: string) => {
       const result = await saveIdea(postIdRef.current, text);
+      if (isSignedOut(result)) throw new SignedOutError();
       postIdRef.current = result.postId;
       if (result.ideaUpdatedAt) onIdeaSaved?.(result.ideaUpdatedAt);
     },
@@ -104,7 +106,10 @@ export function IdeaBox({
             {check.message}
           </span>
         )}
-        <span className="text-caption text-neutral" role="status">
+        <span
+          role="status"
+          className={`text-caption ${autosave.status === "error" || autosave.status === "signed-out" ? "text-error" : "text-neutral"}`}
+        >
           {SAVE_TEXT[autosave.status]}
         </span>
         <span className="flex-1" />

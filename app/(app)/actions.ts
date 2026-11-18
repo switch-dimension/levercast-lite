@@ -3,7 +3,8 @@
 // Thin Server Action wrappers over lib/posts. Each one re-checks the user.
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireUser } from "@/lib/dal";
+import { SIGNED_OUT, type SignedOut } from "@/lib/autosave";
+import { getCurrentUser, requireUser } from "@/lib/dal";
 import { createPost, softDeletePost, updateIdea } from "@/lib/posts";
 
 /** Soft-deletes a post (its events are kept) and returns to My posts (FR-9). */
@@ -23,10 +24,12 @@ export type SaveIdeaResult = { postId: string | null; ideaUpdatedAt: string | nu
 
 /**
  * Autosave for the idea box. With no postId, the first non-empty save
- * creates the post (FR-7); later saves update it.
+ * creates the post (FR-7); later saves update it. A lost session returns
+ * SIGNED_OUT rather than redirecting away from the unsaved idea.
  */
-export async function saveIdea(postId: string | null, idea: string): Promise<SaveIdeaResult> {
-  const user = await requireUser();
+export async function saveIdea(postId: string | null, idea: string): Promise<SaveIdeaResult | SignedOut> {
+  const user = await getCurrentUser();
+  if (!user) return SIGNED_OUT;
   if (!postId) {
     if (!idea.trim()) return { postId: null, ideaUpdatedAt: null };
     const post = await createPost(user.id, idea);

@@ -48,11 +48,17 @@ export async function generateDraft({ userId, post, platform, signal, model, mod
     );
   }
 
+  // The client left before anything started: nothing to record or stream.
+  if (signal?.aborted) return new Response(null, { status: 499 });
+
   const usedModel = modelId ?? currentModelId();
   await recordEvent({ userId, postId: post.id, platform, type: "generation_started", model: usedModel });
 
+  // The client can leave while the request is still being set up, before
+  // the listener exists; an abort event doesn't fire twice.
   const abort = new AbortController();
-  signal?.addEventListener("abort", () => abort.abort(signal.reason), { once: true });
+  if (signal?.aborted) abort.abort(signal.reason);
+  else signal?.addEventListener("abort", () => abort.abort(signal.reason), { once: true });
 
   const result = streamText({
     model: model ?? getModel(),

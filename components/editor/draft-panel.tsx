@@ -8,6 +8,7 @@ import { RegenerateConfirm } from "@/components/editor/regenerate-confirm";
 import { DraftTextarea } from "@/components/editor/draft-textarea";
 import { XThreadPanel } from "@/components/editor/x-thread-panel";
 import { SAVE_TEXT, useAutosave } from "@/hooks/use-autosave";
+import { isSignedOut, SignedOutError } from "@/lib/autosave";
 import type { PanelRun } from "@/hooks/use-generation";
 import { isEdited } from "@/lib/domain/draft-state";
 import { isOverLimit } from "@/lib/domain/limits";
@@ -120,7 +121,12 @@ type BodyProps = {
  * saved (on unmount) before the new draft arrives, never after it.
  */
 function DraftBody({ postId, platform, draft, stale, confirm, onEdit, onRegenerate }: BodyProps) {
-  const save = useCallback((content: string[]) => saveDraft(postId, platform, content), [postId, platform]);
+  const save = useCallback(
+    async (content: string[]) => {
+      if (isSignedOut(await saveDraft(postId, platform, content))) throw new SignedOutError();
+    },
+    [postId, platform],
+  );
   const autosave = useAutosave(save);
   const { label } = PLATFORM_FORMATS[platform];
 
@@ -176,7 +182,7 @@ function DraftBody({ postId, platform, draft, stale, confirm, onEdit, onRegenera
         {isEdited(draft) && <span className="text-caption text-neutral">· Edited</span>}
         <span
           role="status"
-          className={`text-caption ${autosave.status === "error" ? "text-error" : "text-neutral"}`}
+          className={`text-caption ${autosave.status === "error" || autosave.status === "signed-out" ? "text-error" : "text-neutral"}`}
         >
           {SAVE_TEXT[autosave.status]}
         </span>

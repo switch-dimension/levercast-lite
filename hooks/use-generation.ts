@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { SignedOutError } from "@/lib/autosave";
 import { readDraftStream } from "@/lib/domain/draft-stream";
 import { rateLimitMessage } from "@/lib/domain/rate-limit";
 import type { Platform } from "@/lib/platforms";
@@ -9,6 +10,7 @@ export type PanelRun = { status: "idle" | "writing" | "failed"; text: string; er
 
 const IDLE: PanelRun = { status: "idle", text: "", error: null };
 const FAILED_MESSAGE = "This draft didn't finish. Your idea and any earlier draft are safe.";
+const SIGNED_OUT_MESSAGE = "Please sign in again to generate.";
 
 /**
  * Runs generations, one streaming request per platform, in parallel. Each
@@ -46,7 +48,7 @@ export function useGeneration(postId: string, onDone: (platform: Platform) => vo
           return;
         }
         if (res.status === 401) {
-          update(platform, { status: "failed", text: "", error: "Please sign in again to generate." });
+          update(platform, { status: "failed", text: "", error: SIGNED_OUT_MESSAGE });
           return;
         }
         if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
@@ -63,9 +65,14 @@ export function useGeneration(postId: string, onDone: (platform: Platform) => vo
         if (!readDraftStream(received).result?.ok) throw new Error("Generation didn't finish");
         await onDoneRef.current(platform);
         update(platform, IDLE);
-      } catch {
-        if (controller.signal.aborted) return; // left the page
-        update(platform, { status: "failed", text: "", error: FAILED_MESSAGE });
+      } catch (error) {
+        // Left the page. A hidden page keeps its state, so drop the partial
+        // text: coming back shows the previous draft or Not generated.
+        if (controller.signal.aborted) update(platform, IDLE);
+        // The draft saved, but the session ended before it could be loaded.
+        else if (error instanceof SignedOutError)
+          update(platform, { status: "failed", text: "", error: "Please sign in again to see this draft." });
+        else update(platform, { status: "failed", text: "", error: FAILED_MESSAGE });
       } finally {
         controllers.current.delete(platform);
       }

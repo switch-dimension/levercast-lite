@@ -200,6 +200,45 @@ describe("generateDraft", () => {
     expect(types).toEqual(["post_created", "generation_started", "generation_failed"]);
   });
 
+  it("records failed and saves nothing when the request is aborted mid-stream (5.1)", async () => {
+    const userId = newUser();
+    const post = await createPost(userId, "Idea");
+    const request = new AbortController();
+    const res = await generateDraft({
+      userId,
+      post,
+      platform: "bluesky",
+      signal: request.signal,
+      model: streamingModel(Array.from({ length: 50 }, (_, i) => `word${i} `)),
+    });
+    const reader = res.body!.getReader();
+    await reader.read();
+    request.abort();
+    while (!(await reader.read()).done);
+
+    expect(await draftFor(post.id, "bluesky")).toBeUndefined();
+    const log = await eventsFor(post.id);
+    expect(log.map((e) => e.type)).toEqual(["post_created", "generation_started", "generation_failed"]);
+    expect(log[2].error).toMatch(/stopped before it finished/);
+  });
+
+  it("aborted before the generation starts: records nothing and makes no model call (5.1)", async () => {
+    const userId = newUser();
+    const post = await createPost(userId, "Idea");
+    let calls = 0;
+    const model = new MockLanguageModelV4({
+      doStream: async () => {
+        calls++;
+        throw new Error("should not be called");
+      },
+    });
+    const res = await generateDraft({ userId, post, platform: "x", signal: AbortSignal.abort(), model });
+
+    expect(res.status).toBe(499);
+    expect(calls).toBe(0);
+    expect((await eventsFor(post.id)).map((e) => e.type)).toEqual(["post_created"]);
+  });
+
   it("over the cap, returns 429 with the reset time and makes no model call (AC-20)", async () => {
     const userId = newUser();
     const post = await createPost(userId, "Idea");
