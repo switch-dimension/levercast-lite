@@ -1,25 +1,27 @@
 import { Suspense } from "react";
+import { IdeaBox } from "@/components/idea-box";
 import { requireUser } from "@/lib/dal";
 
-// Home. Placeholder until the writing box lands in task 2.1.
+// Home: the writing box is the New post action (FR-6).
 export default function HomePage() {
   return (
-    <main className="mx-auto flex w-full max-w-prose flex-1 flex-col gap-6 px-5 py-16 md:px-8">
-      <h1 className="font-serif text-headline-md md:text-headline-lg">
+    <main className="mx-auto w-full max-w-[760px] flex-1 px-5 pb-28 pt-10 md:px-8 md:pt-[88px]">
+      <h1
+        id="home-heading"
+        className="mb-7 font-serif text-[32px] font-light leading-[1.15] tracking-[-0.015em] md:text-[44px]"
+      >
         What&rsquo;s been on your mind this week?
       </h1>
+      <IdeaBox variant="home" labelledBy="home-heading" />
       <Suspense fallback={null}>
-        <Greeting />
+        <Guard />
       </Suspense>
     </main>
   );
 }
 
-async function Greeting() {
-  const user = await requireUser();
-  return (
-    <p className="font-serif text-body-md text-neutral">
-      You&rsquo;re signed in as {user.email}. The writing box arrives here next.
-    </p>
-  );
+// Every page checks the user itself; layouts aren't re-run on navigation.
+async function Guard() {
+  await requireUser();
+  return null;
 }

@@ -103,6 +103,167 @@
   }
 }
 
+/* Shared components, from the chosen prototype (hybrid.html). */
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 0 16px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    font-size: var(--text-label-md);
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    color: var(--color-on-surface);
+    transition:
+      background-color 200ms ease-out,
+      border-color 200ms ease-out,
+      color 200ms ease-out;
+  }
+  .btn:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+  .btn:disabled {
+    cursor: not-allowed;
+    color: var(--color-disabled);
+  }
+  .btn-primary {
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+    padding: 0 22px;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+  }
+  .btn-primary:disabled {
+    background: var(--color-border);
+  }
+  .btn-secondary {
+    border-color: var(--color-border);
+    background: var(--color-surface);
+  }
+  .btn-secondary:hover:not(:disabled),
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--color-secondary);
+  }
+  .btn-ghost {
+    padding: 0 10px;
+  }
+  .btn-danger {
+    color: var(--color-error);
+  }
+  .btn-danger-fill {
+    background: var(--color-error);
+    color: var(--color-on-primary);
+  }
+  .btn-sm {
+    min-height: 36px;
+    padding: 0 10px;
+    font-size: 13px;
+  }
+  .btn-done {
+    background: var(--color-tertiary-tint);
+  }
+
+  .status {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    font-size: var(--text-caption);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .status-none {
+    background: var(--color-secondary);
+    color: var(--color-neutral);
+  }
+  .status-draft {
+    border: 1px solid var(--color-border);
+    background: var(--color-secondary);
+  }
+  .status-copied {
+    background: var(--color-tertiary-tint);
+  }
+
+  /* Draft state dots: empty / writing / ready / failed / stale */
+  .dot {
+    display: inline-block;
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 9999px;
+  }
+  .dot-empty {
+    border: 1.5px solid var(--color-neutral-on-ink);
+  }
+  .dot-writing {
+    background: var(--color-tertiary);
+    animation: lc-pulse 1.4s ease-in-out infinite;
+  }
+  .dot-ready {
+    background: var(--color-primary);
+  }
+  .dot-failed {
+    background: var(--color-error);
+  }
+  .dot-stale {
+    border: 2px solid var(--color-accent-strong);
+    background: var(--color-surface);
+  }
+
+  .field {
+    width: 100%;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    transition:
+      border-color 200ms ease-out,
+      box-shadow 200ms ease-out;
+  }
+  .field:focus-visible {
+    outline: none;
+    border-color: var(--color-accent-strong);
+    box-shadow: 0 0 0 3px var(--color-tertiary-tint);
+  }
+  .field[aria-invalid="true"] {
+    border-color: var(--color-error);
+  }
+  .field::placeholder {
+    font-style: italic;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--text-eyebrow);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  .eyebrow::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: var(--color-primary);
+  }
+}
+
+@keyframes lc-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
