@@ -16,7 +16,8 @@ export function StatusStrip({ states }: { states: Record<Platform, DraftState> }
             <span aria-hidden className={`dot dot-${states[platform]}`} />
             {PLATFORM_FORMATS[platform].label}
             <span className="sr-only">:</span>
-            <span className="hidden text-caption font-normal text-neutral sm:inline">
+            {/* Visually hidden on phones, but still read out. */}
+            <span className="sr-only text-caption font-normal text-neutral sm:not-sr-only">
               {DRAFT_STATE_LABEL[states[platform]]}
             </span>
           </a>

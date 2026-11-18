@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { copyDraft, saveDraft } from "@/app/(app)/posts/[postId]/actions";
 import { CharCount } from "@/components/editor/char-count";
 import { CopyButton } from "@/components/editor/copy-button";
@@ -132,6 +133,14 @@ function DraftBody({ postId, platform, draft, stale, confirm, onEdit, onRegenera
 
   const [copyBlocked, setCopyBlocked] = useState(false);
 
+  // "Keep my edit" removes the focused button; hand focus back to Regenerate
+  // once it's enabled again, rather than dropping it on the page.
+  const regenerateRef = useRef<HTMLButtonElement>(null);
+  const keep = () => {
+    flushSync(() => confirm?.onKeep());
+    regenerateRef.current?.focus();
+  };
+
   function change(content: string[]) {
     onEdit(content);
     autosave.schedule(content);
@@ -187,7 +196,13 @@ function DraftBody({ postId, platform, draft, stale, confirm, onEdit, onRegenera
           {SAVE_TEXT[autosave.status]}
         </span>
         <span className="flex-1" />
-        <button type="button" className="btn btn-ghost btn-sm" disabled={!!confirm} onClick={onRegenerate}>
+        <button
+          ref={regenerateRef}
+          type="button"
+          className="btn btn-ghost btn-sm"
+          disabled={!!confirm}
+          onClick={onRegenerate}
+        >
           Regenerate
         </button>
         <CopyButton
@@ -197,7 +212,7 @@ function DraftBody({ postId, platform, draft, stale, confirm, onEdit, onRegenera
           onBlocked={copyBlockedNow}
         />
       </div>
-      {confirm && <RegenerateConfirm {...confirm} />}
+      {confirm && <RegenerateConfirm {...confirm} onKeep={keep} />}
     </>
   );
 }
