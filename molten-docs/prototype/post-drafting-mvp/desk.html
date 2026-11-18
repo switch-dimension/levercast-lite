@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Levercast · 2 Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+  /* Approach 2 — The Desk: persistent sidebar, idea pane, tabbed drafts. */
+  html, body { height: 100%; }
+  .desk { display: grid; grid-template-columns: 280px minmax(0, 1fr); height: 100vh; }
+
+  /* Sidebar */
+  .side { background: var(--paper); border-right: 1px solid var(--hairline); display: flex; flex-direction: column; min-height: 0; }
+  .side-top { padding: 18px 20px 12px; display: flex; align-items: center; justify-content: space-between; }
+  .side-list { list-style: none; margin: 0; padding: 4px 10px; overflow-y: auto; flex: 1; }
+  .side-list a { display: block; padding: 12px 12px; border-radius: var(--r-sm); text-decoration: none; color: var(--ink); margin-bottom: 2px; transition: background var(--ease); }
+  .side-list a:hover { background: #efefea; }
+  .side-list a[aria-current="page"] { background: var(--white); box-shadow: inset 3px 0 0 var(--ink); }
+  .side-list .idea { font-family: var(--serif); font-size: 16px; line-height: 1.4; display: block; margin-bottom: 6px; }
+  .side-list .meta { display: flex; align-items: center; gap: 8px; }
+  .side-foot { padding: 12px 20px; border-top: 1px solid var(--hairline); display: flex; justify-content: space-between; align-items: center; }
+  .side-empty { padding: 24px 22px; font-family: var(--serif); font-style: italic; color: var(--slate); }
+
+  /* Main */
+  .main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); min-height: 0; }
+  .pane { overflow-y: auto; min-height: 0; }
+  .idea-pane { padding: 28px 32px 80px; border-right: 1px solid var(--hairline); }
+  .pane-head { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; min-height: 40px; }
+  .pane-head .spacer { flex: 1; }
+  .idea-pane .idea-field { min-height: 320px; border-color: transparent; padding: 4px 0; font-size: 21px; }
+  .idea-pane .idea-field:hover { border-color: transparent; }
+  .idea-pane .idea-field:focus { box-shadow: none; border-color: transparent; }
+  .idea-pane .idea-meta { border-top: 1px solid var(--hairline); padding-top: 14px; }
+  .drafts-pane { padding: 28px 36px 120px; }
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--hairline); margin-bottom: 24px; }
+  .tab { display: inline-flex; align-items: center; gap: 8px; padding: 12px 14px; border: 0; background: none; cursor: pointer; font-size: 14px; font-weight: 500; color: var(--slate); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tab:hover { color: var(--ink); }
+  .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 32px; padding-top: 16px; border-top: 1px dashed var(--hairline); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--slate); }
+  .welcome { grid-column: 1 / -1; display: grid; place-content: center; text-align: left; padding: 40px; }
+  .welcome p { font-family: var(--serif); font-weight: 300; font-size: 30px; margin: 0 0 8px; }
+  .welcome .caption { font-size: 14px; display: block; margin-bottom: 24px; }
+  .mobile-back { display: none; }
+
+  @media (max-width: 1100px) {
+    .main { grid-template-columns: 1fr; overflow-y: auto; }
+    .pane { overflow: visible; }
+    .idea-pane { border-right: 0; border-bottom: 1px solid var(--hairline); padding-bottom: 32px; }
+    .idea-pane .idea-field { min-height: 180px; }
+  }
+  @media (max-width: 760px) {
+    .desk { grid-template-columns: 1fr; }
+    body.has-post .side { display: none; }
+    body:not(.has-post) .main { display: none; }
+    .mobile-back { display: inline-flex; margin-left: -10px; }
+    .idea-pane, .drafts-pane { padding-left: 20px; padding-right: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="desk">
+  <aside class="side" aria-label="My posts">
+    <div class="side-top"><a class="wordmark" href="#/">Levercast</a><a class="btn btn-secondary btn-sm" href="#/new">New post</a></div>
+    <ul class="side-list" id="list"></ul>
+    <div class="side-foot"><span class="caption">My posts</span><button class="btn btn-ghost btn-sm">Sign out</button></div>
+  </aside>
+  <main class="main" id="main"></main>
+</div>
+
+<script src="shared.js"></script>
+<script>
+const listEl = document.getElementById("list");
+const main = document.getElementById("main");
+let currentId = null;
+let activeTab = "linkedin";
+const current = () => (currentId ? LC.getPost(currentId) : null);
+
+function route() {
+  const h = location.hash || "#/";
+  const m = h.match(/^#\/post\/(.+)$/);
+  return m ? { name: "post", id: m[1] } : h === "#/new" ? { name: "new" } : { name: "list" };
+}
+
+function renderList() {
+  const posts = LC.posts();
+  listEl.innerHTML = posts.length
+    ? posts.map((p) => `<li><a href="#/post/${p.id}" ${p.id === currentId ? 'aria-current="page"' : ""}>
+        <span class="idea">${LC.esc(LC.preview(p.idea, 72))}</span>
+        <span class="meta">${LC.statusPill(p)}<span class="caption">${LC.relTime(p.updatedAt)}</span></span></a></li>`).join("")
+    : `<li class="side-empty">Nothing here yet.</li>`;
+}
+
+function renderDrafts() {
+  const pane = main.querySelector(".drafts-pane");
+  const post = current();
+  if (!pane) return;
+  const pid = post?.id || "new";
+  pane.innerHTML = `
+    <div class="tabs" role="tablist" aria-label="Drafts">
+      ${LC.PLATFORMS.map((p) => `<button class="tab" role="tab" id="tab-${p.id}" aria-controls="tp" aria-selected="${p.id === activeTab}" tabindex="${p.id === activeTab ? 0 : -1}" data-tab="${p.id}">
+        <span class="dot dot-${post ? LC.draftState(post, p.id) : "empty"}" data-dot="${p.id}" data-post="${pid}"></span>${p.name}</button>`).join("")}
+    </div>
+    <div id="tp" role="tabpanel" aria-labelledby="tab-${activeTab}">
+      ${post ? `<div data-panel-body="${activeTab}" data-post="${post.id}" aria-live="polite">${LC.panelBody(post, activeTab)}</div>`
+             : `<p class="draft-empty">Your drafts will appear here.</p>`}
+    </div>
+    <div class="legend" aria-hidden="true">
+      <span><span class="dot dot-writing"></span>Writing</span><span><span class="dot dot-ready"></span>Ready</span>
+      <span><span class="dot dot-stale"></span>Idea changed</span><span><span class="dot dot-failed"></span>Didn't finish</span>
+      <span><span class="dot dot-empty"></span>Not generated</span>
+    </div>`;
+  LC.autosize(pane);
+}
+
+function renderMain() {
+  const r = route();
+  document.body.classList.toggle("has-post", r.name !== "list");
+  if (r.name === "list") {
+    main.innerHTML = LC.posts().length
+      ? `<div class="welcome"><p>Pick up where you left off.</p><span class="caption">Choose a post on the left, or start a new one.</span><a class="btn btn-primary" href="#/new">New post</a></div>`
+      : `<div class="welcome"><p>What's been on your mind this week?</p><span class="caption">Start with a rough idea. It doesn't need to be good yet.</span><a class="btn btn-primary" href="#/new">New post</a></div>`;
+    return;
+  }
+  const post = current();
+  if (r.name === "post" && !post) {
+    main.innerHTML = `<div class="welcome"><p>This post doesn't exist.</p><span class="caption">It may have been deleted.</span><a class="btn btn-secondary" href="#/">Back</a></div>`;
+    return;
+  }
+  main.innerHTML = `
+    <section class="pane idea-pane" aria-label="Your idea">
+      <div class="pane-head">
+        <a class="btn btn-ghost mobile-back" href="#/">← Posts</a>
+        <span class="caption">${post ? "Updated " + LC.relTime(post.updatedAt) : "New post"}</span>
+        <span class="spacer"></span>
+        ${post ? `<button class="btn btn-ghost btn-sm btn-danger" data-delete>Delete</button>` : ""}
+      </div>
+      ${LC.ideaBlock(post, { label: "", rows: 12, autofocus: !post })}
+    </section>
+    <section class="pane drafts-pane" aria-label="Drafts"></section>`;
+  renderDrafts();
+  LC.bindIdea(main, {
+    getPost: current,
+    onCreate: (p) => { currentId = p.id; history.replaceState(null, "", "#/post/" + p.id); renderList(); },
+    onGenerate: (p) => { currentId = p.id; history.replaceState(null, "", "#/post/" + p.id); renderList(); renderDrafts(); },
+  });
+  main.querySelector("[data-delete]")?.addEventListener("click", () =>
+    LC.confirmDelete(() => { LC.deletePost(post.id); location.hash = "#/"; }));
+}
+
+function render() {
+  LC.cancelAll();
+  const r = route();
+  currentId = r.name === "post" ? r.id : null;
+  renderList();
+  renderMain();
+}
+
+LC.bindPanels(main, current);
+main.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-tab]");
+  if (t) { activeTab = t.dataset.tab; renderDrafts(); main.querySelector(`[data-tab="${activeTab}"]`).focus(); }
+});
+main.addEventListener("keydown", (e) => {
+  if (!e.target.matches("[data-tab]") || !["ArrowLeft", "ArrowRight"].includes(e.key)) return;
+  const ids = LC.PLATFORMS.map((p) => p.id);
+  activeTab = ids[(ids.indexOf(activeTab) + (e.key === "ArrowRight" ? 1 : 2)) % 3];
+  renderDrafts(); main.querySelector(`[data-tab="${activeTab}"]`).focus();
+});
+LC.hooks.postChanged = () => renderList();
+LC.hooks.reset = () => { location.hash = "#/"; render(); };
+window.addEventListener("hashchange", render);
+LC.protoControls("desk");
+render();
+</script>
+</body>
+</html>

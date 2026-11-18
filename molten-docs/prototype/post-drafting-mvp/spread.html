@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Levercast · 3 Spread</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+  /* Approach 3 — Compose & Spread: writing box first, then a three-column spread. */
+  .home { max-width: 760px; margin: 0 auto; padding: 88px 32px 120px; }
+  .home h1 { font-family: var(--serif); font-weight: 300; font-size: 44px; line-height: 1.15; letter-spacing: -0.015em; margin: 0 0 28px; }
+  .home .idea-field { min-height: 180px; font-size: 21px; }
+  .recent { margin-top: 72px; }
+  .recent-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; }
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .card { display: grid; gap: 10px; padding: 18px 20px; border: 1px solid var(--hairline); border-radius: var(--r-lg); text-decoration: none; color: var(--ink); transition: background var(--ease); }
+  .card:hover { background: var(--paper); }
+  .card .idea { font-family: var(--serif); font-size: 17px; line-height: 1.45; }
+  .card .meta { display: flex; gap: 8px; align-items: center; }
+  @media (max-width: 720px) { .home { padding: 48px 20px 120px; } .home h1 { font-size: 32px; } .cards { grid-template-columns: 1fr; } }
+
+  .all { max-width: 760px; margin: 0 auto; padding: 48px 32px 120px; }
+  .all h1 { font-family: var(--serif); font-weight: 400; font-size: 36px; margin: 8px 0 24px; }
+  .all .cards { grid-template-columns: 1fr; }
+
+  /* Spread */
+  .ideabar { border-bottom: 1px solid var(--hairline); background: var(--paper); }
+  .ideabar-inner { max-width: 1320px; margin: 0 auto; padding: 12px 32px; display: flex; align-items: center; gap: 12px; }
+  .ideabar .line { flex: 1; min-width: 0; font-family: var(--serif); font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ideabar-edit { max-width: 1320px; margin: 0 auto; padding: 4px 32px 20px; }
+  .ideabar-edit .idea-field { min-height: 120px; }
+  .spread { max-width: 1320px; margin: 0 auto; padding: 0 32px 120px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .col { padding: 24px 24px 0; border-right: 1px solid var(--hairline); }
+  .col:first-child { padding-left: 0; }
+  .col:last-child { border-right: 0; padding-right: 0; }
+  .col-head { display: flex; align-items: baseline; gap: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--ink); margin-bottom: 16px; position: sticky; top: 0; background: var(--white); z-index: 2; padding-top: 8px; }
+  .col-head h2 { font-family: var(--serif); font-weight: 500; font-size: 22px; margin: 0; }
+  .col-head .spacer { flex: 1; }
+  .col-head .state { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--slate); }
+  .col .draft-text, .col .draft-streaming { font-size: 17px; }
+  .seg { display: none; }
+
+  @media (max-width: 960px) {
+    .ideabar-inner, .ideabar-edit { padding-left: 20px; padding-right: 20px; }
+    .spread { grid-template-columns: 1fr; padding: 0 20px 120px; }
+    .col { display: none; padding: 16px 0 0; border: 0; }
+    .col.active { display: block; }
+    .col-head { position: static; }
+    .seg { display: flex; gap: 4px; padding: 12px 20px 0; position: sticky; top: 0; background: var(--white); z-index: 3; }
+    .seg button { flex: 1; display: inline-flex; justify-content: center; align-items: center; gap: 8px; padding: 10px; border: 1px solid var(--hairline); background: var(--white); border-radius: var(--r-sm); font-weight: 500; font-size: 14px; cursor: pointer; }
+    .seg button[aria-selected="true"] { background: var(--ink); color: var(--white); border-color: var(--ink); }
+  }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="wordmark" href="#/">Levercast</a>
+  <span class="spacer"></span>
+  <a class="btn btn-ghost" href="#/all">All posts</a>
+  <button class="btn btn-ghost">Sign out</button>
+</header>
+<main id="app"></main>
+
+<script src="shared.js"></script>
+<script>
+const app = document.getElementById("app");
+let currentId = null;
+let editing = false;
+let activeCol = "linkedin";
+const current = () => (currentId ? LC.getPost(currentId) : null);
+
+function route() {
+  const h = location.hash || "#/";
+  const m = h.match(/^#\/post\/(.+)$/);
+  return m ? { name: "post", id: m[1] } : h === "#/all" ? { name: "all" } : { name: "home" };
+}
+
+const card = (p) => `<a class="card" href="#/post/${p.id}"><span class="idea">${LC.esc(LC.preview(p.idea, 110))}</span>
+  <span class="meta">${LC.statusPill(p)}<span class="caption">${LC.relTime(p.updatedAt)}</span></span></a>`;
+
+function renderHome() {
+  currentId = null;
+  const posts = LC.posts();
+  app.innerHTML = `<div class="home">
+    <h1>What's been on your mind this week?</h1>
+    ${LC.ideaBlock(null, { label: "", placeholder: "Type it rough. It doesn't need to be good.", rows: 6, autofocus: true })}
+    ${posts.length ? `<section class="recent" aria-labelledby="recent-h">
+      <div class="recent-head"><span class="eyebrow" id="recent-h">Recent</span><a href="#/all" class="caption">All posts →</a></div>
+      <div class="cards">${posts.slice(0, 4).map(card).join("")}</div></section>` : ""}
+  </div>`;
+  LC.bindIdea(app, {
+    getPost: current,
+    onCreate: (p) => { currentId = p.id; },
+    onGenerate: (p) => { currentId = p.id; history.pushState(null, "", "#/post/" + p.id); renderSpread(); },
+  });
+}
+
+function renderAll() {
+  const posts = LC.posts();
+  app.innerHTML = `<div class="all"><a class="btn btn-ghost" style="margin-left:-10px" href="#/">← Home</a><h1>All posts</h1>
+    ${posts.length ? `<div class="cards">${posts.map(card).join("")}</div>`
+      : `<p class="draft-empty">Nothing here yet. <a href="#/">Start with a rough idea.</a></p>`}</div>`;
+}
+
+function ideabar(post) {
+  if (editing) return `<div class="ideabar"><div class="ideabar-inner"><a class="btn btn-ghost btn-sm" href="#/">← Home</a>
+      <span class="spacer" style="flex:1"></span><button class="btn btn-secondary btn-sm" data-done>Done</button></div>
+    <div class="ideabar-edit">${LC.ideaBlock(post, { label: "", rows: 4 })}</div></div>`;
+  return `<div class="ideabar"><div class="ideabar-inner">
+      <a class="btn btn-ghost btn-sm" href="#/" aria-label="Home">←</a>
+      <span class="line" title="${LC.esc(post.idea)}">${LC.esc(post.idea)}</span>
+      <button class="btn btn-secondary btn-sm" data-edit>Edit idea</button>
+      <button class="btn btn-ghost btn-sm btn-danger" data-delete>Delete</button>
+    </div></div>`;
+}
+
+function renderSpread() {
+  const post = current();
+  if (!post) { app.innerHTML = `<div class="all"><h1>Not found</h1><p>This post doesn't exist or was deleted. <a href="#/">Home</a></p></div>`; return; }
+  app.innerHTML = `${ideabar(post)}
+    <div class="seg" role="tablist" aria-label="Drafts">${LC.PLATFORMS.map((p) => `
+      <button role="tab" aria-selected="${p.id === activeCol}" data-col="${p.id}">
+        <span class="dot dot-${LC.draftState(post, p.id)}" data-dot="${p.id}" data-post="${post.id}"></span>${p.name}</button>`).join("")}</div>
+    <div class="spread">${LC.PLATFORMS.map((p) => `
+      <section class="col ${p.id === activeCol ? "active" : ""}" data-colbox="${p.id}" aria-labelledby="h-${p.id}">
+        <div class="col-head"><h2 id="h-${p.id}">${p.name}</h2><span class="spacer"></span>
+          <span class="state"><span class="dot dot-${LC.draftState(post, p.id)}" data-dot="${p.id}" data-post="${post.id}"></span>
+          <span data-state-label="${p.id}" data-post="${post.id}">${LC.STATE_LABEL[LC.draftState(post, p.id)]}</span></span></div>
+        <div data-panel-body="${p.id}" data-post="${post.id}" aria-live="polite">${LC.panelBody(post, p.id)}</div>
+      </section>`).join("")}</div>`;
+  LC.autosize(app);
+  if (editing) {
+    LC.bindIdea(app, { getPost: current, onGenerate: () => { editing = false; renderSpread(); } });
+    app.querySelector("[data-idea]").focus();
+  }
+}
+
+function render() {
+  LC.cancelAll();
+  editing = false;
+  const r = route();
+  if (r.name === "post") { currentId = r.id; renderSpread(); }
+  else if (r.name === "all") { currentId = null; renderAll(); }
+  else renderHome();
+  window.scrollTo(0, 0);
+}
+
+LC.bindPanels(app, current);
+app.addEventListener("click", (e) => {
+  if (e.target.closest("[data-edit]")) { editing = true; return renderSpread(); }
+  if (e.target.closest("[data-done]")) {
+    const ta = app.querySelector("[data-idea]");
+    if (ta && LC.ideaCheck(ta.value).ok) LC.saveIdea(current(), ta.value);
+    editing = false; return renderSpread();
+  }
+  if (e.target.closest("[data-delete]")) { const id = currentId; return LC.confirmDelete(() => { LC.deletePost(id); location.hash = "#/"; }); }
+  const seg = e.target.closest("[data-col]");
+  if (seg) {
+    activeCol = seg.dataset.col;
+    app.querySelectorAll("[data-col]").forEach((b) => b.setAttribute("aria-selected", b.dataset.col === activeCol));
+    app.querySelectorAll("[data-colbox]").forEach((c) => c.classList.toggle("active", c.dataset.colbox === activeCol));
+    LC.autosize(app);
+  }
+});
+LC.hooks.reset = () => { location.hash = "#/"; render(); };
+window.addEventListener("hashchange", render);
+window.addEventListener("popstate", render);
+LC.protoControls("spread");
+render();
+</script>
+</body>
+</html>

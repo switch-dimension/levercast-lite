@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Levercast · 1 Notebook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+  /* Approach 1 — The Notebook: one column, one page at a time. */
+  .page { max-width: 760px; margin: 0 auto; padding: 48px 32px 120px; }
+  @media (max-width: 720px) { .page { padding: 32px 20px 120px; } }
+  h1 { font-family: var(--serif); font-weight: 400; font-size: 40px; letter-spacing: -0.015em; margin: 0 0 32px; }
+
+  /* List */
+  .rows { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--hairline); }
+  .row a { display: grid; grid-template-columns: 1fr auto; gap: 6px 24px; padding: 20px 4px; border-bottom: 1px solid var(--hairline); text-decoration: none; color: var(--ink); transition: background var(--ease); }
+  .row a:hover { background: var(--paper); }
+  .row .idea { font-family: var(--serif); font-size: 19px; line-height: 1.45; }
+  .row .status { align-self: start; margin-top: 4px; }
+  .empty { padding: 64px 0; }
+  .empty p { font-family: var(--serif); font-weight: 300; font-size: 30px; line-height: 1.35; margin: 0 0 8px; }
+  .empty .caption { font-size: 14px; display: block; margin-bottom: 28px; }
+
+  /* Editor strip */
+  .strip { position: sticky; top: 0; z-index: 10; background: rgba(255,255,255,0.96); border-bottom: 1px solid var(--hairline); }
+  .strip-inner { max-width: 760px; margin: 0 auto; padding: 10px 32px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+  @media (max-width: 720px) { .strip-inner { padding: 8px 20px; } }
+  .strip .back { margin-left: -10px; }
+  .strip .spacer { flex: 1; }
+  .jump { display: inline-flex; align-items: center; gap: 8px; }
+  .jump .lbl { color: var(--slate); font-weight: 400; font-size: 12px; }
+  @media (max-width: 720px) { .jump .lbl { display: none; } }
+
+  /* Draft sections */
+  .drafts { margin-top: 56px; display: grid; gap: 48px; }
+  .draft-section { scroll-margin-top: 72px; }
+  .draft-head { display: flex; align-items: baseline; gap: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--ink); margin-bottom: 16px; }
+  .draft-head h2 { font-family: var(--serif); font-weight: 500; font-size: 24px; margin: 0; }
+  .draft-head .spacer { flex: 1; }
+  .draft-head .state { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--slate); }
+  .foot { margin-top: 72px; padding-top: 20px; border-top: 1px solid var(--hairline); display: flex; justify-content: space-between; align-items: center; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="wordmark" href="#/">Levercast</a>
+  <span class="spacer"></span>
+  <a class="btn btn-secondary" href="#/new">New post</a>
+  <button class="btn btn-ghost">Sign out</button>
+</header>
+<div id="strip"></div>
+<main id="app" class="page"></main>
+
+<script src="shared.js"></script>
+<script>
+const app = document.getElementById("app");
+const strip = document.getElementById("strip");
+let currentId = null;
+const current = () => (currentId ? LC.getPost(currentId) : null);
+
+function route() {
+  const h = location.hash || "#/";
+  const m = h.match(/^#\/post\/(.+)$/);
+  return m ? { name: "post", id: m[1] } : h === "#/new" ? { name: "new" } : { name: "list" };
+}
+
+function renderList() {
+  strip.innerHTML = "";
+  const posts = LC.posts();
+  if (!posts.length) {
+    app.innerHTML = `<h1>My posts</h1><div class="empty">
+      <p>What's been on your mind this week?</p>
+      <span class="caption">Start with a rough idea. It doesn't need to be good yet.</span>
+      <a class="btn btn-primary" href="#/new">New post</a></div>`;
+    return;
+  }
+  app.innerHTML = `<h1>My posts</h1><ul class="rows">${posts.map((p) => `
+    <li class="row"><a href="#/post/${p.id}">
+      <span class="idea">${LC.esc(LC.preview(p.idea))}</span>${LC.statusPill(p)}
+      <span class="caption">Updated ${LC.relTime(p.updatedAt)}</span>
+    </a></li>`).join("")}</ul>`;
+}
+
+function renderEditor() {
+  const post = current();
+  const pid = post?.id || "new";
+  strip.innerHTML = `<nav class="strip" aria-label="Post"><div class="strip-inner">
+    <a class="btn btn-ghost back" href="#/">← My posts</a><span class="spacer"></span>
+    ${LC.PLATFORMS.map((p) => `<button class="btn btn-ghost btn-sm jump" data-jump="${p.id}">
+      <span class="dot dot-${post ? LC.draftState(post, p.id) : "empty"}" data-dot="${p.id}" data-post="${pid}"></span>${p.name}
+      <span class="lbl" data-state-label="${p.id}" data-post="${pid}">${post ? LC.STATE_LABEL[LC.draftState(post, p.id)] : ""}</span></button>`).join("")}
+  </div></nav>`;
+
+  const showDrafts = post && (LC.hasDrafts(post) || LC.anyWriting(post));
+  app.innerHTML = `
+    ${LC.ideaBlock(post, { autofocus: !post })}
+    ${showDrafts ? `<div class="drafts">${LC.PLATFORMS.map((p) => `
+      <section class="draft-section" id="d-${p.id}" aria-labelledby="h-${p.id}">
+        <div class="draft-head"><h2 id="h-${p.id}">${p.name}</h2>
+          <span class="caption">${p.id === "x" ? "2–6 tweets, 280 each" : `up to ${p.limit.toLocaleString()} characters`}</span>
+          <span class="spacer"></span>
+          <span class="state"><span class="dot dot-${LC.draftState(post, p.id)}" data-dot="${p.id}" data-post="${post.id}"></span>
+          <span data-state-label="${p.id}" data-post="${post.id}">${LC.STATE_LABEL[LC.draftState(post, p.id)]}</span></span>
+        </div>
+        <div data-panel-body="${p.id}" data-post="${post.id}" aria-live="polite">${LC.panelBody(post, p.id)}</div>
+      </section>`).join("")}</div>` : ""}
+    ${post ? `<div class="foot"><span class="caption">Created ${LC.relTime(post.createdAt)}</span>
+      <button class="btn btn-ghost btn-danger" data-delete>Delete post</button></div>` : ""}`;
+
+  LC.autosize(app);
+  LC.bindIdea(app, {
+    getPost: current,
+    onCreate: (p) => { currentId = p.id; history.replaceState(null, "", "#/post/" + p.id); },
+    onGenerate: (p) => { currentId = p.id; history.replaceState(null, "", "#/post/" + p.id); renderEditor(); },
+  });
+  app.querySelector("[data-delete]")?.addEventListener("click", () =>
+    LC.confirmDelete(() => { LC.deletePost(post.id); location.hash = "#/"; }));
+}
+
+function render() {
+  LC.cancelAll();
+  const r = route();
+  if (r.name === "list") { currentId = null; renderList(); }
+  else if (r.name === "new") { currentId = null; renderEditor(); }
+  else {
+    currentId = r.id;
+    if (!current()) { strip.innerHTML = ""; app.innerHTML = `<h1>Not found</h1><p>This post doesn't exist or was deleted. <a href="#/">Back to My posts</a></p>`; return; }
+    renderEditor();
+  }
+  window.scrollTo(0, 0);
+}
+
+LC.bindPanels(app, current);
+strip.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-jump]");
+  if (b) document.getElementById("d-" + b.dataset.jump)?.scrollIntoView({ behavior: "smooth" });
+});
+LC.hooks.reset = () => { location.hash = "#/"; render(); };
+window.addEventListener("hashchange", render);
+LC.protoControls("notebook");
+render();
+</script>
+</body>
+</html>
