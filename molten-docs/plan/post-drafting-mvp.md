@@ -118,7 +118,7 @@ Task 1.5 adds the `user.before_create` webhook.
 - The `user.before_create` webhook on the dev Neon branch points at that branch URL plus the bypass query parameter. Because local dev shares the dev branch, sign-ups made locally are checked by the preview's webhook too.
 
 **Production (set up in 5.4, 2026-11-19).**
-- Deployment Protection covers previews only, so testers can reach `https://levercast-lite-switchdimension.vercel.app`.
+- Deployment Protection covers previews only, so testers can reach `https://levercast-lite.vercel.app` (the project's production domain; Neon Auth's trusted domain and webhook point here).
 - Production env vars (`DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET`) point at Neon `main`, with its own cookie secret.
 - `main` is migrated (`drizzle/0000_init.sql`), and the founder is on its allowlist.
 - Neon Auth on `main` trusts the production URL. Its `user.before_create` webhook points at `<production URL>/api/webhooks/neon-auth`, with no bypass parameter because production isn't protected.

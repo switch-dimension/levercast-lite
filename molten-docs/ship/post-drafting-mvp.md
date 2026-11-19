@@ -3,7 +3,7 @@ feature: Post drafting MVP
 slug: post-drafting-mvp
 created: 2026-11-19
 spec: molten-docs/spec/post-drafting-mvp.md
-result: pr-open
+result: merged
 pr: https://github.com/switch-dimension/levercast-lite/pull/24
 ---
 
@@ -43,6 +43,21 @@ pr: https://github.com/switch-dimension/levercast-lite/pull/24
 ## Pull request
 
 [#24](https://github.com/switch-dimension/levercast-lite/pull/24). Checks: Vercel preview passed. The repo has no CI workflow (retro suggestion 1). The founder asked for the merge, so it's merged after this report.
+
+## Deploy
+
+Merged as `399eeba`. Production deployment `levercast-lite-fopk28nad` is Ready at **https://levercast-lite.vercel.app**.
+
+The production domain turned out to be `levercast-lite.vercel.app`, not the `levercast-lite-switchdimension.vercel.app` alias that 5.4 had assumed. Neon Auth's trusted domain and `user.before_create` webhook on `main` were repointed after the deploy.
+
+Smoke checks on production:
+
+| Check | Result |
+| --- | --- |
+| `/sign-in` | 200 |
+| `/` and `/posts` signed out | 307 to `/sign-in` |
+| Unsigned webhook | 401 |
+| Generate signed out | 401 |
 
 ## Rollout and rollback
 
