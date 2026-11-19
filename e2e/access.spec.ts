@@ -49,4 +49,19 @@ test.describe("signed out", () => {
     const rows = await sql`select 1 from neon_auth."user" where lower(email) = lower(${blocked})`;
     expect(rows).toHaveLength(0);
   });
+
+  test("signing out returns to sign-in, and app pages need signing in again (AC-5)", async ({ page, baseURL }) => {
+    // Its own session, so signing out doesn't end the one other tests share.
+    const res = await page.request.post("/api/auth/sign-in/email", {
+      data: { email: process.env.E2E_TEST_EMAIL, password: process.env.E2E_TEST_PASSWORD },
+      headers: { origin: baseURL! },
+    });
+    expect(res.ok()).toBe(true);
+    await page.goto("/");
+    await page.getByRole("button", { name: "Sign out" }).click();
+    await expect(page).toHaveURL(/\/sign-in$/);
+
+    await page.goto("/posts");
+    await expect(page).toHaveURL(/\/sign-in$/);
+  });
 });

@@ -3,7 +3,7 @@ feature: Post drafting MVP
 slug: post-drafting-mvp
 created: 2026-11-18
 spec: molten-docs/spec/post-drafting-mvp.md
-status: in-progress
+status: done
 issue_tracker: github
 tracker_parent: https://github.com/switch-dimension/levercast-lite/issues/1
 molten_next_skill: mt-build
@@ -112,12 +112,18 @@ Task 1.5 adds the `user.before_create` webhook.
 
 **Vercel (set up in 1.5, 2026-11-18).** The old `levercast-lite` project no longer existed, so a new one was created in the Switch Dimension team:
 - It's connected to the GitHub repo with the Next.js framework preset. Pushes build previews, and `main` builds production.
-- Preview env vars (`DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET`) are scoped to `feat/1-post-drafting-mvp` and point at the dev Neon branch. Production vars wait for 5.4.
+- Preview env vars (`DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET`) are scoped to `feat/1-post-drafting-mvp` and point at the dev Neon branch. Production is set up below.
 - Protection Bypass for Automation is on. The secret is in `.env.local` as `VERCEL_AUTOMATION_BYPASS_SECRET`.
 - On the dev Neon branch, the trusted domain is the stable branch URL `https://levercast-lite-git-feat-1-post-drafting-mvp-switchdimension.vercel.app`. Neon only allows a whole leftmost-label wildcard, so per-deployment preview URLs aren't trusted; test on the branch URL.
 - The `user.before_create` webhook on the dev Neon branch points at that branch URL plus the bypass query parameter. Because local dev shares the dev branch, sign-ups made locally are checked by the preview's webhook too.
 
-**Stale Clerk vars (OQ-3):** none are in `.env.local` now. Vercel still needs checking in task 5.4, and removing anything there is *ask first*.
+**Production (set up in 5.4, 2026-11-19).**
+- Deployment Protection covers previews only, so testers can reach `https://levercast-lite-switchdimension.vercel.app`.
+- Production env vars (`DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET`) point at Neon `main`, with its own cookie secret.
+- `main` is migrated (`drizzle/0000_init.sql`), and the founder is on its allowlist.
+- Neon Auth on `main` trusts the production URL. Its `user.before_create` webhook points at `<production URL>/api/webhooks/neon-auth`, with no bypass parameter because production isn't protected.
+
+**Stale Clerk vars (OQ-3):** none in `.env.local` or Vercel (checked in 5.4).
 
 Database branch: **yes, Neon.**
 - Create a `post-drafting-mvp` branch from `main` *after* Neon Auth is enabled on `main`, and use it for local development. Check in task 1.4 that the auth config carries over to the child branch (Neon's "branching authentication" docs); if it doesn't, enable it there too.
