@@ -3,65 +3,51 @@ feature: Post drafting MVP
 slug: post-drafting-mvp
 created: 2026-11-19
 spec: molten-docs/spec/post-drafting-mvp.md
-result: merged
-pr: https://github.com/switch-dimension/levercast-lite/pull/24
+result: blocked
+pr: null
 ---
 
 # Ship — Post drafting MVP
 
+The MVP itself already shipped: [PR #24](https://github.com/switch-dimension/levercast-lite/pull/24) merged as `399eeba` and is live at https://levercast-lite.vercel.app. That ship report (gates, smoke checks, rollout and rollback) is in git history at `848770e:molten-docs/ship/post-drafting-mvp.md`.
+
+This run covers the follow-up after the two-reviewer re-review, and it's blocked.
+
 ## Readiness
 
-- Review: approve with suggestions, no blockers (`molten-docs/review/post-drafting-mvp.md`).
-- Verify: partial. 28 of 29 ACs pass; AC-13 waits on the founder's prompt-quality read. No code changed after verify apart from this doc.
-- Tasks: #2–#21 closed. #22 (release) closes on merge, once production is checked.
-- Branch: `feat/1-post-drafting-mvp`, 0 commits behind `main`, merges cleanly.
-- Database branches: `post-drafting-mvp` (dev, used by previews and local) and `test` stay open; they're the ongoing dev and test environments.
+| Check | Status |
+| --- | --- |
+| Review | **red**: `request-changes`, two blockers (`molten-docs/review/post-drafting-mvp.md`, reviewed at `194d0d3`) |
+| Verify | partial: 28 of 29 ACs pass; AC-13 waits on the founder's prompt-quality read |
+| Tasks | **open**: #25 and #26 (review blockers), #23 (password sign-up on production) |
+| Branch | on `main`; no fix branch exists yet, and no app code has changed since `194d0d3` |
 
 ## Tidy
 
-- Working tree clean apart from a pre-existing, unrelated whitespace edit in `.agents/skills/mt-build/SKILL.md` (not committed).
-- No debug logs, `.only`, or skipped tests in the diff. Temporary debug logging during 5.1 was removed before committing.
-- No `.env` files committed; `.env.example` added and allowed by `.gitignore`.
+Not run, because readiness failed.
 
 ## Gates
 
 | Gate | Command | Result |
 | --- | --- | --- |
-| Build | `npm run build` | pass |
-| Tests | `npx vitest run` · `npx playwright test` | 103 passed · 40 passed |
-| Lint | `npm run lint` | pass |
-| Type-check | `npx tsc --noEmit` | pass |
-| Secrets | `gitleaks git --log-opts="origin/main..HEAD"` | pass (27 commits, no leaks) |
-| Dependencies | — | skipped: no dependencies beyond those the plan approved in Phase 1 |
+| Build | — | skipped: readiness failed |
+| Tests | — | skipped: readiness failed |
+| Lint | — | skipped: readiness failed |
+| Type-check | — | skipped: readiness failed |
+| Secrets | — | skipped: readiness failed |
+| Dependencies | — | skipped: readiness failed |
 
 ## Docs and release
 
-- README rewritten: run, test, deploy, add a tester. `.env.example` lists every variable.
-- No CHANGELOG or versioning in this project.
-- Migration `drizzle/0000_init.sql` is already applied to Neon `main`.
+Not run.
 
 ## Pull request
 
-[#24](https://github.com/switch-dimension/levercast-lite/pull/24). Checks: Vercel preview passed. The repo has no CI workflow (retro suggestion 1). The founder asked for the merge, so it's merged after this report.
+None opened.
 
-## Deploy
+## Blocked on
 
-Merged as `399eeba`. Production deployment `levercast-lite-fopk28nad` is Ready at **https://levercast-lite.vercel.app**.
+1. [#25](https://github.com/switch-dimension/levercast-lite/issues/25): Home's idea box keeps its old post ID and stays on "Opening…" after client-side navigation, so the next idea overwrites the previous post.
+2. [#26](https://github.com/switch-dimension/levercast-lite/issues/26): Try again replaces an edited draft without asking (breaks FR-15).
 
-The production domain turned out to be `levercast-lite.vercel.app`, not the `levercast-lite-switchdimension.vercel.app` alias that 5.4 had assumed. Neon Auth's trusted domain and `user.before_create` webhook on `main` were repointed after the deploy.
-
-Smoke checks on production:
-
-| Check | Result |
-| --- | --- |
-| `/sign-in` | 200 |
-| `/` and `/posts` signed out | 307 to `/sign-in` |
-| Unsigned webhook | 401 |
-| Generate signed out | 401 |
-
-## Rollout and rollback
-
-- **Already in place:** Vercel protection limited to previews; production env vars for Neon `main`; `main` migrated; founder on the production allowlist; Neon Auth trusted domain and `user.before_create` webhook pointed at production.
-- **Watch:** the founder signs in on production; a non-allowlisted account is refused; the first real generation works (AI Gateway over OIDC); `vercel logs --environment production` for webhook or generation errors.
-- **Roll back:** promote the previous production deployment in Vercel, or revert the merge. The four tables are additive and can stay.
-- **Before more testers:** #23 (turn off password sign-up on production Neon Auth).
+**Route:** **mt-build** on a `fix/` branch for #25 and #26, each with the E2E test the review asks for. The review suggests doing the panel-Regenerate idea flush and the OTP-send route block in the same pass. Then **mt-verify**, then **mt-review** of the fix diff, then **mt-ship**. Fix both before inviting more testers, along with #23.
