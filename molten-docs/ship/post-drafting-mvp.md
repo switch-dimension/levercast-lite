@@ -3,65 +3,60 @@ feature: Post drafting MVP
 slug: post-drafting-mvp
 created: 2026-11-19
 spec: molten-docs/spec/post-drafting-mvp.md
-result: merged
-pr: https://github.com/switch-dimension/levercast-lite/pull/24
+result: pr-open
+pr: https://github.com/switch-dimension/levercast-lite/pull/29
 ---
 
-# Ship — Post drafting MVP
+# Ship — Post drafting MVP (review fixes)
+
+The MVP itself shipped in [PR #24](https://github.com/switch-dimension/levercast-lite/pull/24), merged as `399eeba` and live at https://levercast-lite.vercel.app. That ship report (gates, smoke checks, first rollout) is in git history at `848770e:molten-docs/ship/post-drafting-mvp.md`.
+
+This run ships the fixes for the two blockers from the two-reviewer re-review.
 
 ## Readiness
 
-- Review: approve with suggestions, no blockers (`molten-docs/review/post-drafting-mvp.md`).
-- Verify: partial. 28 of 29 ACs pass; AC-13 waits on the founder's prompt-quality read. No code changed after verify apart from this doc.
-- Tasks: #2–#21 closed. #22 (release) closes on merge, once production is checked.
-- Branch: `feat/1-post-drafting-mvp`, 0 commits behind `main`, merges cleanly.
-- Database branches: `post-drafting-mvp` (dev, used by previews and local) and `test` stay open; they're the ongoing dev and test environments.
+| Check | Status |
+| --- | --- |
+| Review | **Not re-reviewed (founder's call).** The review on file (`molten-docs/review/post-drafting-mvp.md`, at `194d0d3`) requests changes for #25 and #26. Both are fixed, but the fix commits weren't reviewed: the founder chose to ship without a fresh mt-review. |
+| Verify | partial: every AC except AC-13 passes, including new evidence for AC-8a, AC-16 and AC-18 (`molten-docs/verify/post-drafting-mvp.md`). AC-13 and a production check of #25 wait on the founder. |
+| Tasks | #25 and #26 closed with commits. #23 closed (Neon Auth change, below). #27 and #28 are follow-up suggestions, open under #1 and not part of this PR. |
+| Branch | `fix/25-26-review-blockers`, 0 behind `origin/main`, no worktrees left over. It also carries `848770e` (the Molten skills update), which was committed on `main` but never pushed. |
+| Database branches | No schema change. `post-drafting-mvp` (dev) and `test` stay open as the ongoing environments. |
 
 ## Tidy
 
-- Working tree clean apart from a pre-existing, unrelated whitespace edit in `.agents/skills/mt-build/SKILL.md` (not committed).
-- No debug logs, `.only`, or skipped tests in the diff. Temporary debug logging during 5.1 was removed before committing.
-- No `.env` files committed; `.env.example` added and allowed by `.gitignore`.
+- Working tree clean. No debug logs, `.only`, skips, or new TODOs in the diff.
+- History: two fixes, one test commit, two docs commits, and the carried skills commit. Nothing to squash.
 
 ## Gates
+
+Run on the final branch state, 2026-11-19.
 
 | Gate | Command | Result |
 | --- | --- | --- |
 | Build | `npm run build` | pass |
-| Tests | `npx vitest run` · `npx playwright test` | 103 passed · 40 passed |
+| Tests | `npx vitest run` · `npx playwright test` | 103 passed · 44 passed |
 | Lint | `npm run lint` | pass |
 | Type-check | `npx tsc --noEmit` | pass |
-| Secrets | `gitleaks git --log-opts="origin/main..HEAD"` | pass (27 commits, no leaks) |
-| Dependencies | — | skipped: no dependencies beyond those the plan approved in Phase 1 |
+| Secrets | `gitleaks git --log-opts="origin/main..HEAD"` | pass (6 commits, no leaks) |
+| Dependencies | — | skipped: no `package.json` or lockfile changes |
 
 ## Docs and release
 
-- README rewritten: run, test, deploy, add a tester. `.env.example` lists every variable.
-- No CHANGELOG or versioning in this project.
-- Migration `drizzle/0000_init.sql` is already applied to Neon `main`.
+- No README, env or migration changes. No CHANGELOG or versioning in this project.
+
+## Neon Auth change (#23, outside the PR)
+
+Email+password **sign-up** is off on `main` and `post-drafting-mvp` (`disable_sign_up: true`). Email sign-in itself stays on, because Neon's emailed codes depend on it. `test` is unchanged for Playwright. On production, a direct `POST /sign-up/email` is refused (`400 EMAIL_PASSWORD_SIGN_UP_DISABLED`), and the founder confirmed emailed-code and Google sign-in.
 
 ## Pull request
 
-[#24](https://github.com/switch-dimension/levercast-lite/pull/24). Checks: Vercel preview passed. The repo has no CI workflow (retro suggestion 1). The founder asked for the merge, so it's merged after this report.
+[#29](https://github.com/switch-dimension/levercast-lite/pull/29). The repo has no CI workflow, so the Vercel preview is the only check.
 
-## Deploy
-
-Merged as `399eeba`. Production deployment `levercast-lite-fopk28nad` is Ready at **https://levercast-lite.vercel.app**.
-
-The production domain turned out to be `levercast-lite.vercel.app`, not the `levercast-lite-switchdimension.vercel.app` alias that 5.4 had assumed. Neon Auth's trusted domain and `user.before_create` webhook on `main` were repointed after the deploy.
-
-Smoke checks on production:
-
-| Check | Result |
-| --- | --- |
-| `/sign-in` | 200 |
-| `/` and `/posts` signed out | 307 to `/sign-in` |
-| Unsigned webhook | 401 |
-| Generate signed out | 401 |
+**Vercel preview: failed, for environment reasons, not code.** The build stopped at `Missing required config: cookies.secret` for `/api/auth/[...path]`. All four preview env vars (`DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET`) are scoped to the `feat/1-post-drafting-mvp` branch only, so this branch's preview has none of them. The same commit builds locally, and production has its own env vars. The dev branch's Neon Auth trusted origin and webhook also point at the old branch's preview URL, so sign-in wouldn't work on this preview even with the vars. Waiting on the founder's choice of how to handle preview envs.
 
 ## Rollout and rollback
 
-- **Already in place:** Vercel protection limited to previews; production env vars for Neon `main`; `main` migrated; founder on the production allowlist; Neon Auth trusted domain and `user.before_create` webhook pointed at production.
-- **Watch:** the founder signs in on production; a non-allowlisted account is refused; the first real generation works (AI Gateway over OIDC); `vercel logs --environment production` for webhook or generation errors.
-- **Roll back:** promote the previous production deployment in Vercel, or revert the merge. The four tables are additive and can stay.
-- **Before more testers:** #23 (turn off password sign-up on production Neon Auth).
+- **On merge:** Vercel deploys `main` to production. There are no migrations or env changes.
+- **Watch:** on production, click Generate on Home, then the Levercast logo, then type a new idea. It should start as a new post with an empty box and an enabled Generate. Then fail a regeneration, edit the draft, and click Try again: it should ask first.
+- **Roll back:** promote the previous production deployment in Vercel, or revert the merge. The Neon Auth change is separate; turn `disable_sign_up` back off only if emailed-code sign-in breaks.

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState, type ReactNode } from "react";
+import { useCallback, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { saveIdea } from "@/app/(app)/actions";
 import { SAVE_TEXT, useAutosave } from "@/hooks/use-autosave";
@@ -51,6 +51,24 @@ export function IdeaBox({
   const autosave = useAutosave(save);
   const check = checkIdea(idea);
 
+  // Home hands its idea to the editor, but <Activity> keeps Home alive with
+  // the old text and post ID. Once handed off, start fresh when Home is
+  // hidden, so the next idea becomes a new post instead of overwriting this
+  // one. An idea the user left mid-draft (no hand-off) is kept.
+  const handedOff = useRef(false);
+  const { cancel } = autosave;
+  useLayoutEffect(
+    () => () => {
+      if (!handedOff.current) return;
+      handedOff.current = false;
+      postIdRef.current = null;
+      cancel();
+      setIdea("");
+      setOpening(false);
+    },
+    [cancel],
+  );
+
   function onChange(text: string) {
     setIdea(text);
     // Nothing to save until there's a post or something worth keeping.
@@ -69,6 +87,7 @@ export function IdeaBox({
       setOpening(false);
       onGenerate(id, idea.trim());
     } else {
+      handedOff.current = true;
       router.push(`/posts/${id}?generate=1`);
     }
   }
@@ -87,6 +106,9 @@ export function IdeaBox({
         id="idea"
         value={idea}
         onChange={(e) => onChange(e.target.value)}
+        // The idea is saved and on its way to the editor; typing now would
+        // save after Home resets.
+        readOnly={opening}
         aria-labelledby={labelledBy}
         aria-invalid={over || undefined}
         aria-describedby={check.message ? "idea-error" : undefined}

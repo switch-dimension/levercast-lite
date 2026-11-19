@@ -126,7 +126,9 @@ export function PostEditor({ post, initialDrafts, autoGenerate = false }: Props)
               state={states[platform]}
               draft={drafts[platform]}
               run={generation.runs[platform]}
-              onRetry={() => void generate([platform])}
+              // The last draft stays editable beside the error, so retry asks
+              // first like Regenerate does (FR-15).
+              onRetry={() => regenerate(platform)}
               onEdit={(content) => editDraft(platform, content)}
               onRegenerate={() => regenerate(platform)}
               confirm={

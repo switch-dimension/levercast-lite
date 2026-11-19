@@ -32,8 +32,8 @@ async function fillHydrated(box: Locator, value: string) {
 }
 
 /** Drafts whose text differs from the mock model's, so a regeneration is visible. */
-async function seedPost() {
-  const [post] = await sql`insert into posts (user_id, idea) values (${userId}, 'Regenerate me') returning id`;
+async function seedPost(idea = "Regenerate me") {
+  const [post] = await sql`insert into posts (user_id, idea) values (${userId}, ${idea}) returning id`;
   const rows: [string, string[]][] = [
     ["linkedin", ["Old LinkedIn draft."]],
     ["x", ["1/ Old first.", "2/ Old second."]],
@@ -115,4 +115,35 @@ test("Regenerate all regenerates unedited drafts at once and asks in the edited 
   await confirmIn(x).getByRole("button", { name: "Replace it" }).click();
   await expect(x.getByRole("textbox", { name: "Tweet 2" })).toHaveValue(/2\/ This is a mock X thread/);
   expect((await starts(postId)).filter((p) => p === "x")).toEqual(["x"]);
+});
+
+test("Try again after a failed run asks first when the draft was edited (#26, FR-15)", async ({ page }) => {
+  // The mock model fails every Bluesky run for this idea.
+  const postId = await seedPost("Regenerate me [mock:fail:bluesky]");
+  await page.goto(`/posts/${postId}`);
+  const bluesky = panel(page, "Bluesky");
+  await expect(bluesky.getByRole("textbox")).toHaveValue("Old Bluesky draft.");
+
+  // An unedited draft regenerates at once; the run fails and the old draft stays.
+  await bluesky.getByRole("button", { name: "Regenerate" }).click();
+  const tryAgain = bluesky.getByRole("button", { name: "Try again" });
+  await expect(tryAgain).toBeVisible();
+  await expect(confirmIn(bluesky)).toHaveCount(0);
+  expect(await starts(postId)).toEqual(["bluesky"]);
+
+  await fillHydrated(bluesky.getByRole("textbox"), "My Bluesky words.");
+  await expect(bluesky.getByText("· Edited")).toBeVisible();
+
+  await tryAgain.click();
+  const confirm = confirmIn(bluesky);
+  await expect(confirm).toBeVisible();
+  await confirm.getByRole("button", { name: "Keep my edit" }).click();
+  await expect(confirm).toHaveCount(0);
+  await expect(bluesky.getByRole("textbox")).toHaveValue("My Bluesky words.");
+  await page.waitForTimeout(500);
+  expect(await starts(postId)).toEqual(["bluesky"]);
+
+  await tryAgain.click();
+  await confirmIn(bluesky).getByRole("button", { name: "Replace it" }).click();
+  await expect.poll(() => starts(postId)).toEqual(["bluesky", "bluesky"]);
 });
