@@ -67,3 +67,26 @@ test("Generate is disabled for an empty or over-long idea (AC-9)", async ({ page
     await cleanUp(marker);
   }
 });
+
+test("an idea left on Home without Generate survives client navigation and keeps its post (#25)", async ({ page }) => {
+  const marker = `kept-${randomUUID().slice(0, 8)}`;
+  try {
+    await page.goto("/");
+    const box = page.getByRole("textbox", { name: "What’s been on your mind this week?" });
+    await box.fill(`Half a thought ${marker}`);
+    await expect(page.getByRole("status").filter({ hasText: "Saved" })).toBeVisible({ timeout: 5000 });
+
+    await page.getByRole("link", { name: "My posts" }).click();
+    await expect(page).toHaveURL(/\/posts$/);
+    await page.getByRole("link", { name: "Levercast" }).click();
+    await expect(box).toHaveValue(`Half a thought ${marker}`);
+
+    await box.press("End");
+    await box.pressSequentially(" finished", { delay: 20 });
+    await expect(page.getByRole("status").filter({ hasText: "Saved" })).toBeVisible({ timeout: 5000 });
+    const rows = await sql`select idea from posts where user_id = ${await e2eUserId()} and idea like ${`%${marker}%`}`;
+    expect(rows.map((r) => r.idea)).toEqual([`Half a thought ${marker} finished`]);
+  } finally {
+    await cleanUp(marker);
+  }
+});

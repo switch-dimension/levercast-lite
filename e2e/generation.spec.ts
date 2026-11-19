@@ -79,6 +79,17 @@ test("returning to Home by client navigation after Generate starts a fresh post 
   expect(b[0].id).not.toBe(postA);
 });
 
+test("browser Back to Home after Generate shows an empty box too (#25)", async ({ page }) => {
+  await startFromHome(page, `Back button idea ${randomUUID().slice(0, 6)}`);
+  await expect(panel(page, "LinkedIn").getByText("Draft ready")).toBeVisible();
+
+  await page.goBack();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("textbox", { name: "What’s been on your mind this week?" })).toHaveValue("");
+  await expect(page.getByRole("button", { name: "Generate drafts" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Opening…" })).toHaveCount(0);
+});
+
 test("X is split into tweets with their own counts; over-limit counts are highlighted (AC-14, AC-15)", async ({
   page,
 }) => {
