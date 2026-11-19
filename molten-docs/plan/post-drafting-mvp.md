@@ -3,7 +3,7 @@ feature: Post drafting MVP
 slug: post-drafting-mvp
 created: 2026-11-18
 spec: molten-docs/spec/post-drafting-mvp.md
-status: in-progress
+status: done
 issue_tracker: github
 tracker_parent: https://github.com/switch-dimension/levercast-lite/issues/1
 molten_next_skill: mt-build
