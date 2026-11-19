@@ -4,7 +4,7 @@ slug: post-drafting-mvp
 created: 2026-11-19
 spec: molten-docs/spec/post-drafting-mvp.md
 result: pr-open
-pr: PR_URL
+pr: https://github.com/switch-dimension/levercast-lite/pull/29
 ---
 
 # Ship — Post drafting MVP (review fixes)
@@ -51,7 +51,9 @@ Email+password **sign-up** is off on `main` and `post-drafting-mvp` (`disable_si
 
 ## Pull request
 
-PR_LINK. Checks: CI_RESULT. The repo has no CI workflow, so the Vercel preview is the only check.
+[#29](https://github.com/switch-dimension/levercast-lite/pull/29). The repo has no CI workflow, so the Vercel preview is the only check.
+
+**Vercel preview: failed, for environment reasons, not code.** The build stopped at `Missing required config: cookies.secret` for `/api/auth/[...path]`. All four preview env vars (`DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET`) are scoped to the `feat/1-post-drafting-mvp` branch only, so this branch's preview has none of them. The same commit builds locally, and production has its own env vars. The dev branch's Neon Auth trusted origin and webhook also point at the old branch's preview URL, so sign-in wouldn't work on this preview even with the vars. Waiting on the founder's choice of how to handle preview envs.
 
 ## Rollout and rollback
 
