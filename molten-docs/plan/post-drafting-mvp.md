@@ -3,7 +3,7 @@ feature: Post drafting MVP
 slug: post-drafting-mvp
 created: 2026-11-18
 spec: molten-docs/spec/post-drafting-mvp.md
-status: approved
+status: done
 issue_tracker: github
 tracker_parent: https://github.com/switch-dimension/levercast-lite/issues/1
 molten_next_skill: mt-build
@@ -49,14 +49,17 @@ The deadline is ~2026-11-25, so the plan uses no extra libraries beyond the expe
 
    The webhook runs on Vercel previews and production only, because Neon can't reach `localhost`. In local development, the email-form check and `requireUser()` enforce the allowlist.
 11. **Email sign-in (OQ-1).** Email sign-in uses a one-time code, sent by Neon Auth's built-in email sender. There's no custom provider in the MVP.
-12. **Playwright sign-in (OQ-1).** A seeded test user signs in with a password, and email-and-password sign-in is turned on **only on the `test` Neon branch**. The app never shows a password field, and `main` and the dev branch keep it off. `e2e/global-setup.ts` signs in through the auth API and saves `storageState`.
+12. **Playwright sign-in (OQ-1).** A seeded test user signs in with a password through the auth API on the `test` Neon branch, and `e2e/global-setup.ts` saves `storageState`. The app never shows a password field.
+    - *Changed in 1.4 (2026-11-18):* Neon's email one-time-code sign-in requires the branch's "Sign-up and Sign-in with Email" setting, which is the email-and-password switch, so it stays **on** for every branch. On `main` (and the branches cloned from it) the password path is closed with `require_email_verification: true` and `send_verification_email_on_sign_up: false`. A password sign-up through the API can never sign in, while code and Google sign-ins verify the email and work. Task 1.6 makes the seeded E2E user's email verified on `test`.
 4. **Mutations vs streaming:**
    - Posts, draft edits, and copy events use Server Actions (`app/(app)/actions.ts`, `app/(app)/posts/[postId]/actions.ts`). These are thin wrappers over `lib/posts.ts`, `lib/drafts.ts` and `lib/events.ts`, which take `userId` explicitly so integration tests can call them without Next.
-   - Generation is a **Route Handler** (`POST /api/posts/[postId]/generate/[platform]`) that returns AI SDK 7 `streamText(...).toTextStreamResponse()`. The client reads it with `fetch` and a `ReadableStream` reader, so we don't need `@ai-sdk/react`.
+   - Generation is a **Route Handler** (`POST /api/posts/[postId]/generate/[platform]`) that streams the draft as plain text from AI SDK 7 `streamText`. The client reads it with `fetch` and a `ReadableStream` reader, so we don't need `@ai-sdk/react`.
    - The draft is persisted on the server when the stream completes. If the stream aborts, the partial text is discarded and *generation failed* is recorded.
+   - *Changed in 3.2 (2026-11-18):* the stream ends with an in-band result, a record separator then `{"ok":true}` or `{"ok":false,…}` (`lib/domain/draft-stream.ts`), and the connection always closes cleanly. Signalling failure by erroring the stream made Chrome silently retry the POST up to 6 times, each retry a new model call and rate-limit hit. A stream with no result counts as failed.
 5. **Model.** `lib/ai/model.ts` reads `AI_MODEL`. The default is **`anthropic/claude-sonnet-5.5`**, confirmed on AI Gateway on 2026-11-18. This resolves OQ-2; the spec's `claude-sonnet-5-5` isn't a valid Gateway ID.
    - With `AI_MOCK=1`, the module returns AI SDK's mock language model, for integration tests and Playwright.
    - Gateway auth uses `AI_GATEWAY_API_KEY` locally and OIDC on Vercel.
+   - *Added in 3.2 (2026-11-18):* calls use `reasoning: "low"`. At the provider default, Sonnet 5.5 thought for ~3–5 s before the first word of LinkedIn and X drafts. At `low`, first text arrives in ~1 s, which meets the ~3 s p50 target. Re-check quality at checkpoint 3.
 6. **Draft storage.** `drafts.content` and `drafts.generated_content` are `text[]`:
    - one element for LinkedIn and Bluesky
    - one element per tweet for X
@@ -107,12 +110,25 @@ There are no others. Webhook signature checks use `node:crypto`, and scripts run
 
 Task 1.5 adds the `user.before_create` webhook.
 
-**Stale Clerk vars (OQ-3):** none are in `.env.local` now. Vercel still needs checking in task 5.4, and removing anything there is *ask first*.
+**Vercel (set up in 1.5, 2026-11-18).** The old `levercast-lite` project no longer existed, so a new one was created in the Switch Dimension team:
+- It's connected to the GitHub repo with the Next.js framework preset. Pushes build previews, and `main` builds production.
+- Preview env vars (`DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET`) are scoped to `feat/1-post-drafting-mvp` and point at the dev Neon branch. Production is set up below.
+- Protection Bypass for Automation is on. The secret is in `.env.local` as `VERCEL_AUTOMATION_BYPASS_SECRET`.
+- On the dev Neon branch, the trusted domain is the stable branch URL `https://levercast-lite-git-feat-1-post-drafting-mvp-switchdimension.vercel.app`. Neon only allows a whole leftmost-label wildcard, so per-deployment preview URLs aren't trusted; test on the branch URL.
+- The `user.before_create` webhook on the dev Neon branch points at that branch URL plus the bypass query parameter. Because local dev shares the dev branch, sign-ups made locally are checked by the preview's webhook too.
+
+**Production (set up in 5.4, 2026-11-19).**
+- Deployment Protection covers previews only, so testers can reach `https://levercast-lite-switchdimension.vercel.app`.
+- Production env vars (`DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET`) point at Neon `main`, with its own cookie secret.
+- `main` is migrated (`drizzle/0000_init.sql`), and the founder is on its allowlist.
+- Neon Auth on `main` trusts the production URL. Its `user.before_create` webhook points at `<production URL>/api/webhooks/neon-auth`, with no bypass parameter because production isn't protected.
+
+**Stale Clerk vars (OQ-3):** none in `.env.local` or Vercel (checked in 5.4).
 
 Database branch: **yes, Neon.**
 - Create a `post-drafting-mvp` branch from `main` *after* Neon Auth is enabled on `main`, and use it for local development. Check in task 1.4 that the auth config carries over to the child branch (Neon's "branching authentication" docs); if it doesn't, enable it there too.
 - The existing `test` branch (`br-noisy-rain-bb3bx5sn`) serves integration and E2E tests.
-- Task 1.1 applies the migration to both branches. `main` is migrated at ship time.
+- Task 1.1 applies the migration to the `test` branch (`npm run db:migrate:test`). The dev branch doesn't exist until 1.4, so 1.4 migrates it right after creating it and points `DATABASE_URL` at it. `main` is migrated at ship time. Until then, `DATABASE_URL` in `.env.local` points at `main`, so don't run plain `npm run db:migrate`.
 
 ## Phase 1 — Foundations and access
 
